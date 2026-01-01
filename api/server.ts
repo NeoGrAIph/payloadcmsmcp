@@ -16,13 +16,14 @@ import { ensureRedisConnection } from '../lib/redis-connection';
 const handler = initializeMcpApiHandler(
   (server) => {
     // Echo tool for testing
-    server.tool("echo", { message: z.string() }, async ({ message }) => ({
+    server.tool("echo", "Echo a message", { message: z.string() }, async ({ message }) => ({
       content: [{ type: "text", text: `Tool echo: ${message}` }],
     }));
 
     // Validate Payload CMS code
     server.tool(
       "validate",
+      "Validate Payload CMS code",
       {
         code: z.string(),
         fileType: z.enum(["collection", "field", "global", "config"]),
@@ -43,6 +44,7 @@ const handler = initializeMcpApiHandler(
     // Query validation rules
     server.tool(
       "query",
+      "Query validation rules for Payload CMS",
       {
         query: z.string(),
         fileType: z.enum(["collection", "field", "global", "config"]).optional(),
@@ -63,6 +65,7 @@ const handler = initializeMcpApiHandler(
     // Execute SQL-like query
     server.tool(
       "mcp_query",
+      "Execute SQL-like query against validation rules",
       {
         sql: z.string(),
       },
@@ -93,6 +96,7 @@ const handler = initializeMcpApiHandler(
     // Generate Payload CMS 3 code templates
     server.tool(
       "generate_template",
+      "Generate Payload CMS 3 code templates",
       {
         templateType: z.enum([
           "collection", 
@@ -135,6 +139,7 @@ const handler = initializeMcpApiHandler(
     // Generate a complete Payload CMS 3 collection
     server.tool(
       "generate_collection",
+      "Generate a complete Payload CMS 3 collection",
       {
         slug: z.string(),
         fields: z.array(
@@ -183,6 +188,7 @@ const handler = initializeMcpApiHandler(
     // Generate a Payload CMS 3 field
     server.tool(
       "generate_field",
+      "Generate a Payload CMS 3 field",
       {
         name: z.string(),
         type: z.string(),
@@ -224,6 +230,7 @@ const handler = initializeMcpApiHandler(
     // Scaffold a complete Payload CMS 3 project
     server.tool(
       "scaffold_project",
+      "Scaffold a complete Payload CMS 3 project structure",
       {
         projectName: z.string(),
         description: z.string().optional(),
@@ -330,30 +337,7 @@ const handler = initializeMcpApiHandler(
   {
     capabilities: {
       tools: {
-        echo: {
-          description: "Echo a message",
-        },
-        validate: {
-          description: "Validate Payload CMS code",
-        },
-        query: {
-          description: "Query validation rules for Payload CMS",
-        },
-        mcp_query: {
-          description: "Execute SQL-like query against validation rules",
-        },
-        generate_template: {
-          description: "Generate Payload CMS 3 code templates",
-        },
-        generate_collection: {
-          description: "Generate a complete Payload CMS 3 collection",
-        },
-        generate_field: {
-          description: "Generate a Payload CMS 3 field",
-        },
-        scaffold_project: {
-          description: "Scaffold a complete Payload CMS 3 project structure",
-        },
+        listChanged: false,
       },
     },
   }
