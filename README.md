@@ -203,6 +203,32 @@ Scaffolds a complete Payload CMS project structure.
 Scaffold a Payload CMS project called "blog-platform" with MongoDB, authentication, and collections for posts, categories, and users. Include a global for site settings.
 ```
 
+### Landing GitOps (new)
+
+#### `landing_generate`
+Generate JSON for a landing block that matches the built-in landing schemas (Content, CTA, Media, Banner, Carousel, Archive, ThreeItemGrid, FormBlock, Code).
+
+**Parameters:**
+- `blockType` (string): Block slug.
+- `preset` (optional enum): "minimal" | "full" (default full).
+- `locale` (optional enum): "en" | "ru" (affects sample text only).
+
+#### `landing_validate`
+Validate a landing document against schemas. Accepts a single block or `{ "sections": [...] }`.
+
+**Parameters:**
+- `document` (string): JSON string.
+- `mode` (optional enum): "strict" | "loose" (loose skips non-JSON).
+
+#### `landing_schema_list`
+Lists available landing block schemas.
+
+#### `landing_schema_get`
+Returns full JSON Schema for a given `blockType`.
+
+#### `landing_documentation`
+Returns summary or detailed help for landing tools.
+
 <hr>
 
 ## 🚀 Getting Started

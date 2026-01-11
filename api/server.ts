@@ -11,6 +11,7 @@ import {
   validateScaffoldOptions,
   ScaffoldOptions
 } from "../lib/payload";
+import { registerLandingTools } from "../lib/payload/landing-tools";
 import { ensureRedisConnection } from '../lib/redis-connection';
 
 const handler = initializeMcpApiHandler(
@@ -333,6 +334,11 @@ const handler = initializeMcpApiHandler(
         }
       }
     );
+
+    // Landing GitOps tools (schemas/generation/validation)
+    registerLandingTools(server).catch((err) => {
+      console.error("Failed to register landing tools", err);
+    });
   },
   {
     capabilities: {

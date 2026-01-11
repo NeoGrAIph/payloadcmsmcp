@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "threeItemGrid",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blockType": { "const": "threeItemGrid" },
+    "blockName": { "type": "string" },
+    "items": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "icon": { "type": "string" }
+        },
+        "required": ["title"]
+      }
+    }
+  },
+  "required": ["blockType", "items"]
+}

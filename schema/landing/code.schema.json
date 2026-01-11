@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "code",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blockType": { "const": "code" },
+    "blockName": { "type": "string" },
+    "code": { "type": "string" },
+    "language": {
+      "type": "string",
+      "enum": ["typescript", "javascript", "python", "bash", "json", "yaml"]
+    }
+  },
+  "required": ["blockType", "code"]
+}
