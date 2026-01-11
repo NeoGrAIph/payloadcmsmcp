@@ -229,6 +229,20 @@ Returns full JSON Schema for a given `blockType`.
 #### `landing_documentation`
 Returns summary or detailed help for landing tools.
 
+### Payload API Bridge (new)
+
+#### `payload_api_request`
+Raw HTTP call to Payload API (base from `PAYLOAD_API_URL`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`. Auth: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).
+
+#### `payload_find` / `payload_create` / `payload_update` / `payload_delete`
+Convenience CRUD helpers for collections with optional `locale`.
+
+#### `payload_upload`
+Upload a small file via multipart; params: `filename`, `mime`, `base64`, optional `relationTo` (default `media`).
+
+#### `payload_api_docs`
+Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
+
 <hr>
 
 ## 🚀 Getting Started

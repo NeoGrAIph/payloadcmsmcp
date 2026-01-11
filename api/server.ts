@@ -12,6 +12,7 @@ import {
   ScaffoldOptions
 } from "../lib/payload";
 import { registerLandingTools } from "../lib/payload/landing-tools";
+import { registerApiTools } from "../lib/payload/api-tools";
 import { ensureRedisConnection } from '../lib/redis-connection';
 
 const handler = initializeMcpApiHandler(
@@ -334,6 +335,11 @@ const handler = initializeMcpApiHandler(
         }
       }
     );
+
+    // Payload API bridge tools
+    registerApiTools(server).catch((err) => {
+      console.error("Failed to register payload API tools", err);
+    });
 
     // Landing GitOps tools (schemas/generation/validation)
     registerLandingTools(server).catch((err) => {
