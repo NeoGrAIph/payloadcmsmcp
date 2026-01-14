@@ -6,13 +6,43 @@ const MAX_BODY_BYTES = 1_500_000; // ~1.5 MB
 
 function buildAuthHeaders() {
   const headers: Record<string, string> = {};
+  const scheme = (process.env.PAYLOAD_API_AUTH_SCHEME || "auto").toLowerCase();
+  const headerName = process.env.PAYLOAD_API_AUTH_HEADER_NAME || "Authorization";
+
+  if (scheme === "none") {
+    return headers;
+  }
+
+  if (scheme === "users-api-key" || scheme === "api-key") {
+    if (!process.env.PAYLOAD_API_SECRET) return headers;
+    const prefix = process.env.PAYLOAD_API_KEY_PREFIX || "users API-Key";
+    headers[headerName] = `${prefix} ${process.env.PAYLOAD_API_SECRET}`;
+    return headers;
+  }
+
+  if (scheme === "basic") {
+    if (!process.env.PAYLOAD_API_USER || !process.env.PAYLOAD_API_PASS) return headers;
+    const token = Buffer.from(
+      `${process.env.PAYLOAD_API_USER}:${process.env.PAYLOAD_API_PASS}`
+    ).toString("base64");
+    headers[headerName] = `Basic ${token}`;
+    return headers;
+  }
+
+  if (scheme === "bearer") {
+    if (!process.env.PAYLOAD_API_SECRET) return headers;
+    headers[headerName] = `Bearer ${process.env.PAYLOAD_API_SECRET}`;
+    return headers;
+  }
+
+  // auto (backward compatible): prefer Bearer secret, else Basic
   if (process.env.PAYLOAD_API_SECRET) {
-    headers.Authorization = `Bearer ${process.env.PAYLOAD_API_SECRET}`;
+    headers[headerName] = `Bearer ${process.env.PAYLOAD_API_SECRET}`;
   } else if (process.env.PAYLOAD_API_USER && process.env.PAYLOAD_API_PASS) {
     const token = Buffer.from(
       `${process.env.PAYLOAD_API_USER}:${process.env.PAYLOAD_API_PASS}`
     ).toString("base64");
-    headers.Authorization = `Basic ${token}`;
+    headers[headerName] = `Basic ${token}`;
   }
   return headers;
 }

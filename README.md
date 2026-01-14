@@ -54,8 +54,8 @@ The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server de
 ### Validation Tools
 
 * `validate` - Validate code for collections, fields, globals, and config
-* `query` - Query validation rules and best practices
-* `mcp_query` - Execute SQL-like queries for Payload CMS structures
+* `query` - Search a small built-in rule set (not a full best-practices DB)
+* `mcp_query` - Execute SQL-like queries against the built-in `validation_rules` table
 
 ### Code Generation
 
@@ -66,7 +66,7 @@ The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server de
 ### Project Setup
 
 * `scaffold_project` - Create entire Payload CMS project structures
-* `validate_scaffold_options` - Ensure scaffold options follow best practices (used internally by scaffold_project)
+* `validate_scaffold_options` - Internal validator used by `scaffold_project` (not exposed as a tool)
 
 <hr>
 
@@ -81,12 +81,16 @@ Validates Payload CMS code for syntax and best practices.
 - `code` (string): The code to validate
 - `fileType` (enum): Type of file - "collection", "field", "global", or "config"
 
+**Important:**
+- `validate` uses `eval` on the provided string. **Do not** pass untrusted input.
+- The input must be a **plain JS object literal**. `import`/`export` statements will fail.
+
 **Example Prompt:**
 ```
 Can you validate this Payload CMS collection code?
 
 ```typescript
-export const Posts = {
+{
   slug: 'posts',
   fields: [
     {
@@ -106,7 +110,7 @@ export const Posts = {
 ```
 
 #### `query`
-Queries validation rules and best practices for Payload CMS.
+Searches a small **built-in** rule set (heuristics). Not a comprehensive best-practices database.
 
 **Parameters:**
 - `query` (string): The query string
@@ -114,19 +118,22 @@ Queries validation rules and best practices for Payload CMS.
 
 **Example Prompt:**
 ```
-What are the best practices for implementing access control in Payload CMS collections?
+Find rules related to access control for collections.
 ```
 
 #### `mcp_query`
-Executes SQL-like queries against Payload CMS structures.
+Executes SQL-like queries against the **built-in** `validation_rules` table.
 
 **Parameters:**
 - `sql` (string): SQL-like query string
 
 **Example Prompt:**
 ```
-Can you execute this query to find all valid field types in Payload CMS?
-SELECT field_types FROM payload_schema WHERE version = '3.0'
+Can you list security rules?
+SELECT id, category, description FROM validation_rules WHERE category = 'security' LIMIT 5
+
+Describe the available columns:
+DESCRIBE validation_rules
 ```
 
 ### Code Generation
@@ -137,6 +144,10 @@ Generates code templates for various Payload CMS components.
 **Parameters:**
 - `templateType` (enum): Type of template - "collection", "field", "global", "config", "access-control", "hook", "endpoint", "plugin", "block", "migration"
 - `options` (record): Configuration options for the template
+
+**Notes:**
+- Generated code currently uses `import ... from 'payload/types'` (Payload v2 style). For Payload 3, update to `import type { ... } from 'payload'`.
+- Some templates are intentionally generic and require manual refinement.
 
 **Example Prompt:**
 ```
@@ -161,6 +172,9 @@ Generates a complete Payload CMS collection definition.
 Generate a Payload CMS collection for a blog with title, content, author, and published date fields. Include timestamps and versioning.
 ```
 
+**Notes:**
+- The output is a starting point. You will usually need to add access control, admin labels, and Payload 3 import paths.
+
 #### `generate_field`
 Generates a Payload CMS field definition.
 
@@ -179,6 +193,10 @@ Generates a Payload CMS field definition.
 ```
 Generate a Payload CMS image field with validation that requires alt text and has a description in the admin panel.
 ```
+
+**Notes:**
+- Text-like fields get default `minLength`/`maxLength`.
+- `upload` fields will still require `relationTo` to match your project.
 
 ### Project Setup
 
@@ -203,10 +221,15 @@ Scaffolds a complete Payload CMS project structure.
 Scaffold a Payload CMS project called "blog-platform" with MongoDB, authentication, and collections for posts, categories, and users. Include a global for site settings.
 ```
 
+**Notes:**
+- Returns a **JSON description** of files, not actual files.
+- Options are validated internally; invalid inputs will return an error response.
+
 ### Landing GitOps (new)
 
 #### `landing_generate`
-Generate JSON for a landing block that matches the built-in landing schemas (Content, CTA, Media, Banner, Carousel, Archive, ThreeItemGrid, FormBlock, Code).
+Generate JSON for a landing block that matches the built-in landing schemas.
+Supported `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carousel`, `archive`, `threeItemGrid`, `formBlock`, `code`.
 
 **Parameters:**
 - `blockType` (string): Block slug.
@@ -215,6 +238,7 @@ Generate JSON for a landing block that matches the built-in landing schemas (Con
 
 #### `landing_validate`
 Validate a landing document against schemas. Accepts a single block or `{ "sections": [...] }`.
+Input is a **JSON string**. In `mode: "loose"`, non-JSON input is skipped.
 
 **Parameters:**
 - `document` (string): JSON string.
@@ -232,7 +256,14 @@ Returns summary or detailed help for landing tools.
 ### Payload API Bridge (new)
 
 #### `payload_api_request`
-Raw HTTP call to Payload API (base from `PAYLOAD_API_URL`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`. Auth: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).
+Raw HTTP call to Payload API (base from `PAYLOAD_API_URL`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`.
+Auth by default: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).
+If your API expects a different auth scheme (e.g. `users API-Key <token>`), pass a custom `Authorization` header via `headers`.
+
+**Auth scheme overrides (optional):**
+- `PAYLOAD_API_AUTH_SCHEME` = `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
+- `PAYLOAD_API_KEY_PREFIX` (default: `users API-Key`)
+- `PAYLOAD_API_AUTH_HEADER_NAME` (default: `Authorization`)
 
 #### `payload_find` / `payload_create` / `payload_update` / `payload_delete`
 Convenience CRUD helpers for collections with optional `locale`.
@@ -242,6 +273,22 @@ Upload a small file via multipart; params: `filename`, `mime`, `base64`, optiona
 
 #### `payload_api_docs`
 Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
+
+## ⚠️ Known Limitations & Gotchas
+
+- **Validation uses `eval`**: only pass trusted input and **plain object literals** (no `import`/`export`).
+- **Rule base is small**: `query`/`mcp_query` search a limited in-repo rule set. Results may be empty.
+- **SQL tables are limited**: only `validation_rules` is supported (`payload_schema` is not).
+- **Payload 3 imports**: generated code uses `payload/types` and may need manual updates to `import type { ... } from 'payload'`.
+- **Blocks default fields**: `generate_template` for blocks adds `image` and `content` by default. Set `imageField: false` / `contentField: false` to disable.
+- **Hooks are generic**: templates use `beforeOperation`/`afterOperation` and may need adjustment to your project conventions.
+- **API auth schemes**: `payload_find/create/update/delete` use Bearer/Basic only. For custom schemes, use `payload_api_request` with a custom `Authorization` header.
+- **Scaffold output**: `scaffold_project` returns JSON structure, not files on disk.
+
+## 🔌 Transport & Endpoints
+
+- This MCP server uses **SSE transport** with `/sse` and `/message`.
+- Streamable HTTP MCP is **not** served directly; use a bridge (e.g., mcp-sse-bridge) or a gateway to expose `/mcp`.
 
 <hr>
 
@@ -255,6 +302,21 @@ Before you begin, make sure you have:
 * An active Railway account
 * A Railway API token (create one at [railway.app/account/tokens](https://railway.app/account/tokens))
 * Basic familiarity with Payload CMS 3.0 concepts
+
+### 1.1 Required Environment Variables
+
+The MCP server **requires Redis** for SSE sessions:
+- `REDIS_URL` or `KV_URL` (required)
+
+Payload API tools require:
+- `PAYLOAD_API_URL` (required for payload_api_* tools)
+- `PAYLOAD_API_SECRET` **or** `PAYLOAD_API_USER` + `PAYLOAD_API_PASS` (optional, for auth)
+- `PAYLOAD_API_AUTH_SCHEME` (optional): `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
+- `PAYLOAD_API_KEY_PREFIX` (optional, default: `users API-Key`)
+- `PAYLOAD_API_AUTH_HEADER_NAME` (optional, default: `Authorization`)
+
+Limits:
+- JSON bodies and uploads are limited to ~1.5MB.
 
 ### 2. Configure Cursor
 
@@ -274,8 +336,8 @@ Once configured, you can use these tools in your AI prompts:
 
 * **Code Validation:** "Validate this Payload CMS collection code"
 * **Template Generation:** "Generate a template for a media collection"
-* **Query Rules:** "Query validation rules for access control"
-* **SQL-like Queries:** "Execute a query to find field types for collections"
+* **Query Rules:** "Find validation rules about access control"
+* **SQL-like Queries:** "List security rules from validation_rules"
 
 ### 4. Example Workflow
 
@@ -283,7 +345,7 @@ A typical workflow with the Payload CMS MCP Server:
 
 1. Generate a collection template with specific fields
 2. Validate the generated code for best practices
-3. Query for specific validation rules to improve the code
+3. Query built-in validation rules to improve the code
 4. Generate additional components like hooks or endpoints
 5. Scaffold a complete project structure when ready
 
@@ -379,13 +441,10 @@ AI: Let me query the validation rules for access control.
 
 [Uses query tool]
 
-Here are the best practices for access control in Payload CMS:
+Here are the **built-in** rules related to access control (note: the rule set is small and heuristic):
 
-1. Always define explicit access control functions for create, read, update, and delete operations
-2. Use role-based access control for admin users
-3. Implement field-level access control for sensitive data
-4. Use collection-level access control for broad permissions
-5. Consider using hooks alongside access control for complex logic
+- access-control (category: security)
+- sensitive-fields (category: security)
 
 User: Now I need to scaffold a complete project with this product collection and a categories collection.
 
@@ -699,6 +758,8 @@ npm install -g payload-cms-mcp
 # Run the server
 payload-cms-mcp
 ```
+
+Note: `payload-cms-mcp` serves the static UI from `public/`. The MCP endpoints live under `/api/server.ts` (serverless). To test MCP locally, run in a serverless/dev environment (e.g. Vercel dev) or wire the handler into your own HTTP server to expose `/sse` and `/message`.
 
 ### Option 2: Clone the repository
 
