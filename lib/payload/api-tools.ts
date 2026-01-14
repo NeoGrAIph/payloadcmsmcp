@@ -47,9 +47,20 @@ function buildAuthHeaders() {
   return headers;
 }
 
-function ensureUrl(path: string): URL {
-  const base = process.env.PAYLOAD_API_URL;
-  if (!base) throw new Error("PAYLOAD_API_URL is not set");
+function getBaseUrl(env?: string): string {
+  const selected = (env || "dev").toLowerCase();
+  if (selected === "prod") {
+    return process.env.PAYLOAD_API_URL_PROD || process.env.PAYLOAD_API_URL || "";
+  }
+  if (selected === "dev") {
+    return process.env.PAYLOAD_API_URL_DEV || process.env.PAYLOAD_API_URL || "";
+  }
+  throw new Error("env must be 'dev' or 'prod'");
+}
+
+function ensureUrl(path: string, env?: string): URL {
+  const base = getBaseUrl(env);
+  if (!base) throw new Error("PAYLOAD_API_URL_DEV/PROD is not set");
   if (!path.startsWith("/")) throw new Error("path must start with '/'");
   const url = new URL(path, base.endsWith("/") ? base : `${base}/`);
   if (!url.href.startsWith(base)) {
@@ -63,8 +74,9 @@ async function doFetch(opts: {
   path: string;
   body?: any;
   headers?: Record<string, string>;
+  env?: string;
 }) {
-  const url = ensureUrl(opts.path);
+  const url = ensureUrl(opts.path, opts.env);
   const authHeaders = buildAuthHeaders();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -111,15 +123,16 @@ async function doFetch(opts: {
 export async function registerApiTools(server: McpServer) {
   server.tool(
     "payload_api_request",
-    "Perform raw HTTP request to Payload API (base URL is PAYLOAD_API_URL)",
+    "Perform raw HTTP request to Payload API (base URL from PAYLOAD_API_URL_DEV/PROD)",
     {
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
       path: z.string().describe("Path beginning with /, e.g. /api/globals"),
       body: z.any().optional(),
       headers: z.record(z.string()).optional(),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ method, path, body, headers }) => {
-      const res = await doFetch({ method, path, body, headers });
+    async ({ method, path, body, headers, env }) => {
+      const res = await doFetch({ method, path, body, headers, env });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
       };
@@ -135,8 +148,9 @@ export async function registerApiTools(server: McpServer) {
       limit: z.number().min(1).max(100).optional(),
       page: z.number().min(1).optional(),
       locale: z.string().optional(),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ collection, where, limit, page, locale }) => {
+    async ({ collection, where, limit, page, locale, env }) => {
       const query: any = {};
       if (where) query.where = where;
       if (limit) query.limit = limit;
@@ -148,6 +162,7 @@ export async function registerApiTools(server: McpServer) {
       const res = await doFetch({
         method: "GET",
         path: `/api/${collection}${search}`,
+        env,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -162,13 +177,15 @@ export async function registerApiTools(server: McpServer) {
       collection: z.string(),
       data: z.record(z.any()),
       locale: z.string().optional(),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ collection, data, locale }) => {
+    async ({ collection, data, locale, env }) => {
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "POST",
         path,
         body: data,
+        env,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -184,13 +201,15 @@ export async function registerApiTools(server: McpServer) {
       id: z.string(),
       data: z.record(z.any()),
       locale: z.string().optional(),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ collection, id, data, locale }) => {
+    async ({ collection, id, data, locale, env }) => {
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "PATCH",
         path,
         body: data,
+        env,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -204,12 +223,14 @@ export async function registerApiTools(server: McpServer) {
     {
       collection: z.string(),
       id: z.string(),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ collection, id }) => {
+    async ({ collection, id, env }) => {
       const path = `/api/${collection}/${id}`;
       const res = await doFetch({
         method: "DELETE",
         path,
+        env,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -225,13 +246,14 @@ export async function registerApiTools(server: McpServer) {
       mime: z.string(),
       base64: z.string(),
       relationTo: z.string().default("media"),
+      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ filename, mime, base64, relationTo }) => {
+    async ({ filename, mime, base64, relationTo, env }) => {
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
       }
-      const url = ensureUrl(`/api/${relationTo}`);
+      const url = ensureUrl(`/api/${relationTo}`, env);
       const authHeaders = buildAuthHeaders();
       const form = new FormData();
       form.append("file", new Blob([buffer], { type: mime }), filename);

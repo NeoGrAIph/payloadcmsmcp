@@ -256,7 +256,7 @@ Returns summary or detailed help for landing tools.
 ### Payload API Bridge (new)
 
 #### `payload_api_request`
-Raw HTTP call to Payload API (base from `PAYLOAD_API_URL`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`.
+Raw HTTP call to Payload API (base from `PAYLOAD_API_URL_DEV`/`PAYLOAD_API_URL_PROD`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`, optional `env` (`dev` default, `prod`).
 Auth by default: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).
 If your API expects a different auth scheme (e.g. `users API-Key <token>`), pass a custom `Authorization` header via `headers`.
 
@@ -309,7 +309,8 @@ The MCP server **requires Redis** for SSE sessions:
 - `REDIS_URL` or `KV_URL` (required)
 
 Payload API tools require:
-- `PAYLOAD_API_URL` (required for payload_api_* tools)
+- `PAYLOAD_API_URL_DEV` (required for payload_api_* tools; default target)
+- `PAYLOAD_API_URL_PROD` (required for payload_api_* tools when `env=prod`)
 - `PAYLOAD_API_SECRET` **or** `PAYLOAD_API_USER` + `PAYLOAD_API_PASS` (optional, for auth)
 - `PAYLOAD_API_AUTH_SCHEME` (optional): `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
 - `PAYLOAD_API_KEY_PREFIX` (optional, default: `users API-Key`)
