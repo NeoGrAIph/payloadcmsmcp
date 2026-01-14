@@ -227,6 +227,14 @@ Scaffold a Payload CMS project called "blog-platform" with MongoDB, authenticati
 
 ### Landing GitOps (new)
 
+#### `payloadcms_tools_documentation`
+Returns documentation for all payloadcmsmcp tools (overview or per-tool). Similar to `n8n_tools_documentation`.
+
+**Parameters:**
+- `topic` (optional string): tool name or `overview` (default).
+- `depth` (optional enum): `essentials` | `full` (default essentials).
+- `format` (optional enum): `json` | `markdown` (default markdown).
+
 #### `landing_generate`
 Generate JSON for a landing block that matches the built-in landing schemas.
 Supported `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carousel`, `archive`, `threeItemGrid`, `formBlock`, `code`.
@@ -282,7 +290,7 @@ Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
 - **Payload 3 imports**: generated code uses `payload/types` and may need manual updates to `import type { ... } from 'payload'`.
 - **Blocks default fields**: `generate_template` for blocks adds `image` and `content` by default. Set `imageField: false` / `contentField: false` to disable.
 - **Hooks are generic**: templates use `beforeOperation`/`afterOperation` and may need adjustment to your project conventions.
-- **API auth schemes**: `payload_find/create/update/delete` use Bearer/Basic only. For custom schemes, use `payload_api_request` with a custom `Authorization` header.
+- **API auth schemes**: tools support `PAYLOAD_API_AUTH_SCHEME` (`users-api-key`, `bearer`, `basic`, `api-key`, `none`) and custom header name/prefix.
 - **Scaffold output**: `scaffold_project` returns JSON structure, not files on disk.
 
 ## 🔌 Transport & Endpoints

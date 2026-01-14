@@ -13,6 +13,7 @@ import {
 } from "../lib/payload";
 import { registerLandingTools } from "../lib/payload/landing-tools";
 import { registerApiTools } from "../lib/payload/api-tools";
+import { getPayloadcmsToolsDocumentation } from "../lib/payload/tools-documentation";
 import { ensureRedisConnection } from '../lib/redis-connection';
 
 const handler = initializeMcpApiHandler(
@@ -333,6 +334,28 @@ const handler = initializeMcpApiHandler(
             ],
           };
         }
+      }
+    );
+
+    // Documentation for payloadcmsmcp tools
+    server.tool(
+      "payloadcms_tools_documentation",
+      "Documentation for payloadcmsmcp tools (overview or per-tool)",
+      {
+        topic: z.string().optional(),
+        depth: z.enum(["essentials", "full"]).optional(),
+        format: z.enum(["json", "markdown"]).optional(),
+      },
+      async ({ topic, depth, format }) => {
+        const doc = getPayloadcmsToolsDocumentation({ topic, depth, format });
+        return {
+          content: [
+            {
+              type: "text",
+              text: typeof doc === "string" ? doc : JSON.stringify(doc, null, 2),
+            },
+          ],
+        };
       }
     );
 
