@@ -282,6 +282,34 @@ Upload a small file via multipart; params: `filename`, `mime`, `base64`, optiona
 #### `payload_api_docs`
 Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
 
+### Landing Editor Tools (new)
+
+These tools operate **only** on the `landing` collection and are designed for editor-friendly workflows.
+
+#### `payload_landing_list`
+List landing documents with filters (status/locale/pagination).
+
+#### `payload_landing_get`
+Get a landing by `id` or `slug`.
+
+#### `payload_landing_hero_get`
+Get hero-related top-level fields and optional hero block.
+
+#### `payload_landing_blocks_list`
+List blocks with indexes and summaries to target specific sections.
+
+#### `payload_landing_block_get`
+Get a single block by index or blockId.
+
+#### `payload_landing_create` / `payload_landing_update`
+Create or update top-level fields of a landing.
+
+#### `payload_landing_block_add` / `payload_landing_block_update` / `payload_landing_block_remove` / `payload_landing_block_move`
+Add/update/remove/reorder blocks in `sections`. `payload_landing_block_update` supports partial updates (e.g. only heading/description).
+
+#### `payload_landing_set_status`
+Publish/unpublish (draft/published) using the Payload draft workflow.
+
 ## ⚠️ Known Limitations & Gotchas
 
 - **Validation uses `eval`**: only pass trusted input and **plain object literals** (no `import`/`export`).
