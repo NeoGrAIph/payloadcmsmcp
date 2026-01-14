@@ -49,6 +49,24 @@ function buildAuthHeaders() {
 
 const DEV_SITE = "dev.synestra.io";
 const PROD_SITE = "synestra.io";
+const PROD_ACCESS_MODE = (process.env.PAYLOAD_PROD_ACCESS_MODE || "restricted").toLowerCase();
+
+function parseAllowlist(raw?: string): Set<string> {
+  if (!raw) return new Set();
+  return new Set(
+    raw
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+const PROD_ALLOWLIST = parseAllowlist(process.env.PAYLOAD_PROD_ALLOWLIST);
+
+function isProdAllowed(key: string): boolean {
+  if (PROD_ACCESS_MODE === "unrestricted") return true;
+  return PROD_ALLOWLIST.has(key.toLowerCase());
+}
 
 function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
   const siteVal = (site || DEV_SITE).toLowerCase();
@@ -137,7 +155,7 @@ async function doFetch(opts: {
 export async function registerApiTools(server: McpServer) {
   server.tool(
     "payload_api_request",
-    "Perform raw HTTP request to Payload API (site+env; prod requires both)",
+    "Perform raw HTTP request to Payload API (site+env; prod requires allowlist or unrestricted mode)",
     {
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
       path: z.string().describe("Path beginning with /, e.g. /api/globals"),
@@ -148,8 +166,11 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ method, path, body, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && method !== "GET") {
-        throw new Error("prod is read-only for payload_api_request");
+      if (target.env === "prod") {
+        const methodKey = `payload_api_request_${method.toLowerCase()}`;
+        if (!isProdAllowed(methodKey) && !isProdAllowed("payload_api_request")) {
+          throw new Error(`prod access denied: ${methodKey}`);
+        }
       }
       const res = await doFetch({ method, path, body, headers, env, site });
       return {
@@ -180,6 +201,10 @@ export async function registerApiTools(server: McpServer) {
       const search = Object.keys(query).length
         ? `?${new URLSearchParams({ query: JSON.stringify(query) }).toString()}`
         : "";
+      const target = resolveTarget(site, env);
+      if (target.env === "prod" && !isProdAllowed("payload_find")) {
+        throw new Error("prod access denied: payload_find");
+      }
       const res = await doFetch({
         method: "GET",
         path: `/api/${collection}${search}`,
@@ -206,8 +231,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, data, locale, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod") {
-        throw new Error("prod is not allowed for payload_create");
+      if (target.env === "prod" && !isProdAllowed("payload_create")) {
+        throw new Error("prod access denied: payload_create");
       }
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
@@ -238,6 +263,9 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, data, locale, headers, env, site }) => {
       const target = resolveTarget(site, env);
+      if (target.env === "prod" && !isProdAllowed("payload_update")) {
+        throw new Error("prod access denied: payload_update");
+      }
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "PATCH",
@@ -265,8 +293,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod") {
-        throw new Error("prod is not allowed for payload_delete");
+      if (target.env === "prod" && !isProdAllowed("payload_delete")) {
+        throw new Error("prod access denied: payload_delete");
       }
       const path = `/api/${collection}/${id}`;
       const res = await doFetch({
@@ -295,6 +323,10 @@ export async function registerApiTools(server: McpServer) {
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
     async ({ filename, mime, base64, relationTo, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod" && !isProdAllowed("payload_upload")) {
+        throw new Error("prod access denied: payload_upload");
+      }
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
