@@ -194,12 +194,12 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
   },
   payload_api_request: {
     name: "payload_api_request",
-    summary: "Raw HTTP call to Payload API.",
+    summary: "Raw HTTP call to Payload API (method-dependent).",
     description:
       "Performs an HTTP request to Payload API. Supports prod/dev routing via site+env and allowlist gating.",
     category: "payload_api",
-    readOnly: true,
-    destructive: false,
+    readOnly: false,
+    destructive: true,
     parameters: [
       { name: "method", type: "enum(GET|POST|PUT|PATCH|DELETE)", required: true, description: "HTTP method." },
       { name: "path", type: "string", required: true, description: "Path starting with /, e.g. /api/landing" },
@@ -223,9 +223,11 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: [
       "Prefer payload_find/create/update/delete for common CRUD.",
       "Use prod only with explicit site+env parameters.",
+      "Treat non-GET methods as destructive; prefer GET for read-only checks.",
       "Limit payload_api_request_* in prod via allowlist unless in controlled dev mode.",
     ],
     pitfalls: [
+      "POST/PUT/PATCH/DELETE can modify data; use with caution.",
       "Prod requires BOTH site=synestra.io and env=prod.",
       "Allowlist may block prod calls unless PAYLOAD_PROD_ACCESS_MODE=unrestricted.",
     ],
