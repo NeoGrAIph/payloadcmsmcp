@@ -145,10 +145,13 @@ export async function registerApiTools(server: McpServer) {
       const search = Object.keys(query).length
         ? `?${new URLSearchParams({ query: JSON.stringify(query) }).toString()}`
         : "";
-      return await server.callTool("payload_api_request", {
+      const res = await doFetch({
         method: "GET",
         path: `/api/${collection}${search}`,
       });
+      return {
+        content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
+      };
     }
   );
 
@@ -162,11 +165,14 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, data, locale }) => {
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
-      return await server.callTool("payload_api_request", {
+      const res = await doFetch({
         method: "POST",
         path,
         body: data,
       });
+      return {
+        content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
+      };
     }
   );
 
@@ -181,11 +187,14 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, data, locale }) => {
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
-      return await server.callTool("payload_api_request", {
+      const res = await doFetch({
         method: "PATCH",
         path,
         body: data,
       });
+      return {
+        content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
+      };
     }
   );
 
@@ -198,10 +207,13 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id }) => {
       const path = `/api/${collection}/${id}`;
-      return await server.callTool("payload_api_request", {
+      const res = await doFetch({
         method: "DELETE",
         path,
       });
+      return {
+        content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
+      };
     }
   );
 
