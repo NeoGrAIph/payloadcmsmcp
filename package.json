@@ -41,7 +41,8 @@
     "http-proxy-middleware": "^2.0.6",
     "raw-body": "^3.0.0",
     "redis": "^4.7.0",
-    "zod": "^3.24.2"
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
