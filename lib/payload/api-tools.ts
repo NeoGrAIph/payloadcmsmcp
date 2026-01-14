@@ -295,10 +295,6 @@ export async function registerApiTools(server: McpServer) {
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
     async ({ filename, mime, base64, relationTo, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod") {
-        throw new Error("prod is not allowed for payload_upload");
-      }
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
