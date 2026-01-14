@@ -26,6 +26,13 @@ type DocumentationRequest = {
   format?: "json" | "markdown";
 };
 
+export type ToolAnnotations = {
+  readOnlyHint: boolean;
+  destructiveHint: boolean;
+  idempotentHint: boolean;
+  openWorldHint: boolean;
+};
+
 const TOOL_DOCS: Record<string, ToolDoc> = {
   echo: {
     name: "echo",
@@ -560,4 +567,22 @@ export function getPayloadcmsToolsDocumentation(req: DocumentationRequest) {
   }
 
   return renderToolMarkdown(doc, depth);
+}
+
+export function getPayloadcmsToolAnnotations(toolName: string): ToolAnnotations {
+  const doc = TOOL_DOCS[toolName];
+  if (!doc) {
+    return {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    };
+  }
+  return {
+    readOnlyHint: doc.readOnly,
+    destructiveHint: doc.destructive,
+    idempotentHint: doc.readOnly,
+    openWorldHint: false,
+  };
 }

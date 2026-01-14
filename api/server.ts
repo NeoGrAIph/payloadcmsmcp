@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { initializeMcpApiHandler } from "../lib/mcp-api-handler";
+import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { 
   validatePayloadCode, 
   queryValidationRules, 
@@ -13,8 +15,29 @@ import {
 } from "../lib/payload";
 import { registerLandingTools } from "../lib/payload/landing-tools";
 import { registerApiTools } from "../lib/payload/api-tools";
-import { getPayloadcmsToolsDocumentation } from "../lib/payload/tools-documentation";
+import { getPayloadcmsToolsDocumentation, getPayloadcmsToolAnnotations } from "../lib/payload/tools-documentation";
 import { ensureRedisConnection } from '../lib/redis-connection';
+
+const EMPTY_OBJECT_JSON_SCHEMA = { type: "object", properties: {} } as const;
+
+function registerToolsListOverride(server: McpServer) {
+  // Override tools/list to include annotations for safety-aware clients.
+  server.server.setRequestHandler(ListToolsRequestSchema, () => {
+    const registry = (server as any)._registeredTools || {};
+    const tools = Object.entries(registry).map(([name, tool]) => {
+      const inputSchema = tool.inputSchema
+        ? zodToJsonSchema(tool.inputSchema, { strictUnions: true })
+        : EMPTY_OBJECT_JSON_SCHEMA;
+      return {
+        name,
+        description: tool.description,
+        inputSchema,
+        annotations: getPayloadcmsToolAnnotations(name),
+      };
+    });
+    return { tools };
+  });
+}
 
 const handler = initializeMcpApiHandler(
   (server) => {
@@ -368,6 +391,9 @@ const handler = initializeMcpApiHandler(
     registerLandingTools(server).catch((err) => {
       console.error("Failed to register landing tools", err);
     });
+
+    // Ensure tools/list exposes readOnly/destructive hints for clients.
+    registerToolsListOverride(server);
   },
   {
     capabilities: {

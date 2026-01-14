@@ -297,6 +297,7 @@ Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
 
 - This MCP server uses **SSE transport** with `/sse` and `/message`.
 - Streamable HTTP MCP is **not** served directly; use a bridge (e.g., mcp-sse-bridge) or a gateway to expose `/mcp`.
+- `tools/list` includes MCP `annotations` for safety-aware clients (readOnly/destructive/idempotent/openWorld).
 
 <hr>
 
