@@ -47,6 +47,18 @@ function buildAuthHeaders() {
   return headers;
 }
 
+const DEV_SITE = "dev.synestra.io";
+const PROD_SITE = "synestra.io";
+
+function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
+  const siteVal = (site || DEV_SITE).toLowerCase();
+  const envVal = (env || "dev").toLowerCase();
+  if (siteVal === PROD_SITE && envVal === "prod") {
+    return { env: "prod" };
+  }
+  return { env: "dev" };
+}
+
 function getBaseUrl(env?: string): string {
   const selected = (env || "dev").toLowerCase();
   if (selected === "prod") {
@@ -92,10 +104,11 @@ async function doFetch(opts: {
   body?: any;
   headers?: Record<string, string>;
   env?: string;
+  site?: string;
 }) {
   const extracted = extractEnvFromHeaders(opts.headers);
-  const selectedEnv = (opts.env || extracted.env || "dev").toLowerCase();
-  const url = ensureUrl(opts.path, selectedEnv);
+  const target = resolveTarget(opts.site, opts.env || extracted.env);
+  const url = ensureUrl(opts.path, target.env);
   const authHeaders = buildAuthHeaders();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -142,16 +155,21 @@ async function doFetch(opts: {
 export async function registerApiTools(server: McpServer) {
   server.tool(
     "payload_api_request",
-    "Perform raw HTTP request to Payload API (env dev|prod; default dev)",
+    "Perform raw HTTP request to Payload API (site+env; prod requires both)",
     {
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
       path: z.string().describe("Path beginning with /, e.g. /api/globals"),
       body: z.any().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ method, path, body, headers, env }) => {
-      const res = await doFetch({ method, path, body, headers, env });
+    async ({ method, path, body, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod" && method !== "GET") {
+        throw new Error("prod is read-only for payload_api_request");
+      }
+      const res = await doFetch({ method, path, body, headers, env, site });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
       };
@@ -169,8 +187,9 @@ export async function registerApiTools(server: McpServer) {
       locale: z.string().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ collection, where, limit, page, locale, headers, env }) => {
+    async ({ collection, where, limit, page, locale, headers, env, site }) => {
       const query: any = {};
       if (where) query.where = where;
       if (limit) query.limit = limit;
@@ -184,6 +203,7 @@ export async function registerApiTools(server: McpServer) {
         path: `/api/${collection}${search}`,
         headers,
         env,
+        site,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -200,8 +220,13 @@ export async function registerApiTools(server: McpServer) {
       locale: z.string().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ collection, data, locale, headers, env }) => {
+    async ({ collection, data, locale, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod") {
+        throw new Error("prod is not allowed for payload_create");
+      }
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "POST",
@@ -209,6 +234,7 @@ export async function registerApiTools(server: McpServer) {
         body: data,
         headers,
         env,
+        site,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -226,8 +252,13 @@ export async function registerApiTools(server: McpServer) {
       locale: z.string().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ collection, id, data, locale, headers, env }) => {
+    async ({ collection, id, data, locale, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod") {
+        throw new Error("prod is not allowed for payload_update");
+      }
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "PATCH",
@@ -235,6 +266,7 @@ export async function registerApiTools(server: McpServer) {
         body: data,
         headers,
         env,
+        site,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -250,14 +282,20 @@ export async function registerApiTools(server: McpServer) {
       id: z.string(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ collection, id, headers, env }) => {
+    async ({ collection, id, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod") {
+        throw new Error("prod is not allowed for payload_delete");
+      }
       const path = `/api/${collection}/${id}`;
       const res = await doFetch({
         method: "DELETE",
         path,
         headers,
         env,
+        site,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -275,15 +313,20 @@ export async function registerApiTools(server: McpServer) {
       relationTo: z.string().default("media"),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
+      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ filename, mime, base64, relationTo, headers, env }) => {
+    async ({ filename, mime, base64, relationTo, headers, env, site }) => {
+      const target = resolveTarget(site, env);
+      if (target.env === "prod") {
+        throw new Error("prod is not allowed for payload_upload");
+      }
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
       }
       const extracted = extractEnvFromHeaders(headers);
-      const selectedEnv = (env || extracted.env || "dev").toLowerCase();
-      const url = ensureUrl(`/api/${relationTo}`, selectedEnv);
+      const selected = resolveTarget(site, env || extracted.env);
+      const url = ensureUrl(`/api/${relationTo}`, selected.env);
       const authHeaders = buildAuthHeaders();
       const form = new FormData();
       form.append("file", new Blob([buffer], { type: mime }), filename);
