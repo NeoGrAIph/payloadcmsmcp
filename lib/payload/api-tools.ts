@@ -55,7 +55,24 @@ function getBaseUrl(env?: string): string {
   if (selected === "dev") {
     return process.env.PAYLOAD_API_URL_DEV || process.env.PAYLOAD_API_URL || "";
   }
-  throw new Error("env must be 'dev' or 'prod'");
+  throw new Error("X-Payload-Env must be 'dev' or 'prod'");
+}
+
+function extractEnvFromHeaders(headers?: Record<string, string>): {
+  env?: string;
+  headers?: Record<string, string>;
+} {
+  if (!headers) return {};
+  let env: string | undefined;
+  const cleaned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === "x-payload-env") {
+      env = value.toLowerCase();
+      continue;
+    }
+    cleaned[key] = value;
+  }
+  return { env, headers: cleaned };
 }
 
 function ensureUrl(path: string, env?: string): URL {
@@ -74,14 +91,14 @@ async function doFetch(opts: {
   path: string;
   body?: any;
   headers?: Record<string, string>;
-  env?: string;
 }) {
-  const url = ensureUrl(opts.path, opts.env);
+  const { env, headers: cleanedHeaders } = extractEnvFromHeaders(opts.headers);
+  const url = ensureUrl(opts.path, env);
   const authHeaders = buildAuthHeaders();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...authHeaders,
-    ...(opts.headers || {}),
+    ...(cleanedHeaders || {}),
   };
 
   const body =
@@ -123,16 +140,15 @@ async function doFetch(opts: {
 export async function registerApiTools(server: McpServer) {
   server.tool(
     "payload_api_request",
-    "Perform raw HTTP request to Payload API (base URL from PAYLOAD_API_URL_DEV/PROD)",
+    "Perform raw HTTP request to Payload API (set X-Payload-Env: prod to target prod)",
     {
       method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]),
       path: z.string().describe("Path beginning with /, e.g. /api/globals"),
       body: z.any().optional(),
       headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
     },
-    async ({ method, path, body, headers, env }) => {
-      const res = await doFetch({ method, path, body, headers, env });
+    async ({ method, path, body, headers }) => {
+      const res = await doFetch({ method, path, body, headers });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
       };
@@ -148,9 +164,9 @@ export async function registerApiTools(server: McpServer) {
       limit: z.number().min(1).max(100).optional(),
       page: z.number().min(1).optional(),
       locale: z.string().optional(),
-      env: z.enum(["dev", "prod"]).optional(),
+      headers: z.record(z.string()).optional(),
     },
-    async ({ collection, where, limit, page, locale, env }) => {
+    async ({ collection, where, limit, page, locale, headers }) => {
       const query: any = {};
       if (where) query.where = where;
       if (limit) query.limit = limit;
@@ -162,7 +178,7 @@ export async function registerApiTools(server: McpServer) {
       const res = await doFetch({
         method: "GET",
         path: `/api/${collection}${search}`,
-        env,
+        headers,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -177,15 +193,15 @@ export async function registerApiTools(server: McpServer) {
       collection: z.string(),
       data: z.record(z.any()),
       locale: z.string().optional(),
-      env: z.enum(["dev", "prod"]).optional(),
+      headers: z.record(z.string()).optional(),
     },
-    async ({ collection, data, locale, env }) => {
+    async ({ collection, data, locale, headers }) => {
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "POST",
         path,
         body: data,
-        env,
+        headers,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -201,15 +217,15 @@ export async function registerApiTools(server: McpServer) {
       id: z.string(),
       data: z.record(z.any()),
       locale: z.string().optional(),
-      env: z.enum(["dev", "prod"]).optional(),
+      headers: z.record(z.string()).optional(),
     },
-    async ({ collection, id, data, locale, env }) => {
+    async ({ collection, id, data, locale, headers }) => {
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "PATCH",
         path,
         body: data,
-        env,
+        headers,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -223,14 +239,14 @@ export async function registerApiTools(server: McpServer) {
     {
       collection: z.string(),
       id: z.string(),
-      env: z.enum(["dev", "prod"]).optional(),
+      headers: z.record(z.string()).optional(),
     },
-    async ({ collection, id, env }) => {
+    async ({ collection, id, headers }) => {
       const path = `/api/${collection}/${id}`;
       const res = await doFetch({
         method: "DELETE",
         path,
-        env,
+        headers,
       });
       return {
         content: [{ type: "text", text: JSON.stringify(res, null, 2) }],
@@ -246,13 +262,14 @@ export async function registerApiTools(server: McpServer) {
       mime: z.string(),
       base64: z.string(),
       relationTo: z.string().default("media"),
-      env: z.enum(["dev", "prod"]).optional(),
+      headers: z.record(z.string()).optional(),
     },
-    async ({ filename, mime, base64, relationTo, env }) => {
+    async ({ filename, mime, base64, relationTo, headers }) => {
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
       }
+      const { env } = extractEnvFromHeaders(headers);
       const url = ensureUrl(`/api/${relationTo}`, env);
       const authHeaders = buildAuthHeaders();
       const form = new FormData();
