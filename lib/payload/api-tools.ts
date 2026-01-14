@@ -70,23 +70,6 @@ function getBaseUrl(env?: string): string {
   throw new Error("env must be 'dev' or 'prod'");
 }
 
-function extractEnvFromHeaders(headers?: Record<string, string>): {
-  env?: string;
-  headers?: Record<string, string>;
-} {
-  if (!headers) return {};
-  let env: string | undefined;
-  const cleaned: Record<string, string> = {};
-  for (const [key, value] of Object.entries(headers)) {
-    if (key.toLowerCase() === "x-payload-env") {
-      env = value.toLowerCase();
-      continue;
-    }
-    cleaned[key] = value;
-  }
-  return { env, headers: cleaned };
-}
-
 function ensureUrl(path: string, env?: string): URL {
   const base = getBaseUrl(env);
   if (!base) throw new Error("PAYLOAD_API_URL_DEV/PROD is not set");
@@ -106,14 +89,13 @@ async function doFetch(opts: {
   env?: string;
   site?: string;
 }) {
-  const extracted = extractEnvFromHeaders(opts.headers);
-  const target = resolveTarget(opts.site, opts.env || extracted.env);
+  const target = resolveTarget(opts.site, opts.env);
   const url = ensureUrl(opts.path, target.env);
   const authHeaders = buildAuthHeaders();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...authHeaders,
-    ...(extracted.headers || {}),
+    ...(opts.headers || {}),
   };
 
   const body =
@@ -256,9 +238,6 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, data, locale, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod") {
-        throw new Error("prod is not allowed for payload_update");
-      }
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
         method: "PATCH",
@@ -324,8 +303,7 @@ export async function registerApiTools(server: McpServer) {
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
       }
-      const extracted = extractEnvFromHeaders(headers);
-      const selected = resolveTarget(site, env || extracted.env);
+      const selected = resolveTarget(site, env);
       const url = ensureUrl(`/api/${relationTo}`, selected.env);
       const authHeaders = buildAuthHeaders();
       const form = new FormData();
