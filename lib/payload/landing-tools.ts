@@ -59,7 +59,7 @@ export async function registerLandingTools(server: McpServer) {
   const validators = await loadLandingSchemas().catch(() => ({}));
 
   server.tool(
-    "landing_generate",
+    "payload_landing_generate",
     "Generate a landing block JSON that matches Payload block schema",
     {
       blockType: z.string(),
@@ -74,7 +74,7 @@ export async function registerLandingTools(server: McpServer) {
   );
 
   server.tool(
-    "landing_validate",
+    "payload_landing_validate",
     "Validate landing document (JSON with sections[] or single block) against schemas",
     {
       document: z.string(),
@@ -106,7 +106,7 @@ export async function registerLandingTools(server: McpServer) {
   );
 
   server.tool(
-    "landing_schema_list",
+    "payload_landing_schema_list",
     "List available landing block schemas",
     {},
     async () => {
@@ -116,7 +116,7 @@ export async function registerLandingTools(server: McpServer) {
   );
 
   server.tool(
-    "landing_schema_get",
+    "payload_landing_schema_get",
     "Get JSON Schema for a landing block",
     { blockType: z.string() },
     async ({ blockType }) => {
@@ -131,7 +131,7 @@ export async function registerLandingTools(server: McpServer) {
   );
 
   server.tool(
-    "landing_documentation",
+    "payload_landing_documentation",
     "Documentation for landing tools",
     {
       mode: z.enum(["summary", "tool"]).optional(),
@@ -139,30 +139,30 @@ export async function registerLandingTools(server: McpServer) {
     },
     async ({ mode = "summary", toolName }) => {
       const summary = [
-        { name: "landing_generate", desc: "Generate JSON for a landing block (matches schema)" },
-        { name: "landing_validate", desc: "Validate JSON (sections[] or single block) against schemas" },
-        { name: "landing_schema_list", desc: "List available block schemas" },
-        { name: "landing_schema_get", desc: "Get full JSON Schema by blockType" },
-        { name: "landing_documentation", desc: "This help tool" },
+        { name: "payload_landing_generate", desc: "Generate JSON for a landing block (matches schema)" },
+        { name: "payload_landing_validate", desc: "Validate JSON (sections[] or single block) against schemas" },
+        { name: "payload_landing_schema_list", desc: "List available block schemas" },
+        { name: "payload_landing_schema_get", desc: "Get full JSON Schema by blockType" },
+        { name: "payload_landing_documentation", desc: "This help tool" },
       ];
       if (mode === "summary") {
         return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
       }
       if (toolName) {
         const details: Record<string, any> = {
-          landing_generate: {
+          payload_landing_generate: {
             description: "Generate a sample payload for a landing block. Use preset=minimal to get only blockType.",
             params: { blockType: "string", preset: "minimal|full", locale: "en|ru" },
             example: { blockType: "content", preset: "full" },
           },
-          landing_validate: {
+          payload_landing_validate: {
             description: "Validate a document JSON (single block or sections[]) against the schemas.",
             params: { document: "JSON string", mode: "strict|loose" },
             example: { document: "{\"sections\":[{\"blockType\":\"content\",\"richText\":\"Hi\"}]}" },
           },
-          landing_schema_list: { description: "List blockType names that have schemas", params: {} },
-          landing_schema_get: { description: "Return full JSON Schema for blockType", params: { blockType: "string" } },
-          landing_documentation: { description: "Return help for landing tools", params: { mode: "summary|tool", toolName: "string" } },
+          payload_landing_schema_list: { description: "List blockType names that have schemas", params: {} },
+          payload_landing_schema_get: { description: "Return full JSON Schema for blockType", params: { blockType: "string" } },
+          payload_landing_documentation: { description: "Return help for landing tools", params: { mode: "summary|tool", toolName: "string" } },
         };
         return { content: [{ type: "text", text: JSON.stringify(details[toolName] || {}, null, 2) }] };
       }

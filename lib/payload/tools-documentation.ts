@@ -34,8 +34,8 @@ export type ToolAnnotations = {
 };
 
 const TOOL_DOCS: Record<string, ToolDoc> = {
-  echo: {
-    name: "echo",
+  payload_echo: {
+    name: "payload_echo",
     summary: "Echo a message for connectivity checks.",
     description: "Returns the provided message. Useful for verifying MCP connectivity and latency.",
     category: "core",
@@ -49,8 +49,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for smoke checks before API calls."],
     pitfalls: ["None; this tool is side-effect free."],
   },
-  validate: {
-    name: "validate",
+  payload_validation_validate: {
+    name: "payload_validation_validate",
     summary: "Validate Payload CMS code snippets.",
     description:
       "Validates a code snippet against Payload CMS rules for collections/fields/globals/config. Uses an internal rule set.",
@@ -71,8 +71,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Validate snippets before merging into codebase."],
     pitfalls: ["Validation relies on internal rules; not a full compiler.", "Avoid untrusted input."],
   },
-  query: {
-    name: "query",
+  payload_validation_query: {
+    name: "payload_validation_query",
     summary: "Query validation rules for Payload CMS.",
     description: "Searches internal validation rules by query string and optional file type.",
     category: "validation",
@@ -91,8 +91,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use to quickly answer schema questions."],
     pitfalls: ["Rule base is limited; empty results are possible."],
   },
-  mcp_query: {
-    name: "mcp_query",
+  payload_validation_mcp_query: {
+    name: "payload_validation_mcp_query",
     summary: "Run SQL-like queries against validation rules.",
     description: "Executes a restricted SQL-like query against internal validation rules.",
     category: "validation",
@@ -104,8 +104,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for advanced filtering of rules."],
     pitfalls: ["Only validation_rules table is supported."],
   },
-  generate_template: {
-    name: "generate_template",
+  payload_template_generate: {
+    name: "payload_template_generate",
     summary: "Generate Payload CMS 3 templates.",
     description: "Generates code templates for Payload CMS 3 (collection/field/global/config/etc.).",
     category: "generation",
@@ -128,8 +128,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Review and adapt generated code before use.", "Keep templates in repo for review."],
     pitfalls: ["Generated code may need manual edits for project conventions."],
   },
-  generate_collection: {
-    name: "generate_collection",
+  payload_collection_generate: {
+    name: "payload_collection_generate",
     summary: "Generate a complete collection template.",
     description: "Convenience wrapper for a full collection template using a structured schema.",
     category: "generation",
@@ -150,8 +150,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Validate generated code in your codebase."],
     pitfalls: ["Does not write files; output is a template string."],
   },
-  generate_field: {
-    name: "generate_field",
+  payload_field_generate: {
+    name: "payload_field_generate",
     summary: "Generate a field template.",
     description: "Generates a Payload field template using provided options.",
     category: "generation",
@@ -173,8 +173,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Prefer explicit validation rules in your project."],
     pitfalls: ["Generated code may not match project conventions."],
   },
-  scaffold_project: {
-    name: "scaffold_project",
+  payload_scaffold_project_generate: {
+    name: "payload_scaffold_project_generate",
     summary: "Scaffold a Payload CMS 3 project structure.",
     description:
       "Generates a JSON representation of a full project scaffold. Does not write files to disk.",
@@ -228,7 +228,7 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
       },
     ],
     bestPractices: [
-      "Prefer payload_find/create/update/delete for common CRUD.",
+      "Prefer payload_api_find/create/update/delete for common CRUD.",
       "Use prod only with explicit site+env parameters.",
       "Treat non-GET methods as destructive; prefer GET for read-only checks.",
       "Limit payload_api_request_* in prod via allowlist unless in controlled dev mode.",
@@ -239,8 +239,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
       "Allowlist may block prod calls unless PAYLOAD_PROD_ACCESS_MODE=unrestricted.",
     ],
   },
-  payload_find: {
-    name: "payload_find",
+  payload_api_find: {
+    name: "payload_api_find",
     summary: "Find documents in a collection.",
     description: "Convenience read-only query against a collection with optional where/limit/page/locale.",
     category: "payload_api",
@@ -261,8 +261,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for read-only access; keep limit small."],
     pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
   },
-  payload_create: {
-    name: "payload_create",
+  payload_api_create: {
+    name: "payload_api_create",
     summary: "Create a document.",
     description: "Creates a document in a collection with optional locale.",
     category: "payload_api",
@@ -281,8 +281,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use in dev by default; be explicit when targeting prod."],
     pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
   },
-  payload_update: {
-    name: "payload_update",
+  payload_api_update: {
+    name: "payload_api_update",
     summary: "Update a document by ID.",
     description: "Updates a document by ID with partial data.",
     category: "payload_api",
@@ -302,8 +302,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Patch only changed fields; keep payloads small."],
     pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
   },
-  payload_delete: {
-    name: "payload_delete",
+  payload_api_delete: {
+    name: "payload_api_delete",
     summary: "Delete a document by ID.",
     description: "Deletes a document by ID from a collection.",
     category: "payload_api",
@@ -321,8 +321,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Confirm ID before delete; prefer soft-delete if available."],
     pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
   },
-  payload_upload: {
-    name: "payload_upload",
+  payload_api_upload: {
+    name: "payload_api_upload",
     summary: "Upload a small file via multipart.",
     description: "Uploads a base64-encoded file to a collection (default media).",
     category: "payload_api",
@@ -355,8 +355,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for quick lookup of endpoints and patterns."],
     pitfalls: ["May not include project-specific endpoints."],
   },
-  landing_generate: {
-    name: "landing_generate",
+  payload_landing_generate: {
+    name: "payload_landing_generate",
     summary: "Generate landing block JSON for GitOps schema.",
     description: "Generates a JSON payload for a landing block that matches schemas.",
     category: "landing",
@@ -372,8 +372,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use preset=minimal for skeletons, full for samples."],
     pitfalls: ["Only supports known block types."],
   },
-  landing_validate: {
-    name: "landing_validate",
+  payload_landing_validate: {
+    name: "payload_landing_validate",
     summary: "Validate landing JSON against schemas.",
     description: "Validates a landing document or block JSON against schemas.",
     category: "landing",
@@ -388,8 +388,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Validate after editing content blocks."],
     pitfalls: ["Strict mode rejects non-JSON input."],
   },
-  landing_schema_list: {
-    name: "landing_schema_list",
+  payload_landing_schema_list: {
+    name: "payload_landing_schema_list",
     summary: "List available landing schemas.",
     description: "Returns the list of available landing block schemas.",
     category: "landing",
@@ -401,8 +401,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use to discover supported blocks."],
     pitfalls: ["List depends on bundled schemas."],
   },
-  landing_schema_get: {
-    name: "landing_schema_get",
+  payload_landing_schema_get: {
+    name: "payload_landing_schema_get",
     summary: "Get JSON schema for a landing block.",
     description: "Returns the JSON schema for a specific landing block type.",
     category: "landing",
@@ -414,8 +414,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for validation or tooling generation."],
     pitfalls: ["Unknown blockType returns error message."],
   },
-  landing_documentation: {
-    name: "landing_documentation",
+  payload_landing_documentation: {
+    name: "payload_landing_documentation",
     summary: "Help for landing tools.",
     description: "Returns summary or per-tool details for landing tools.",
     category: "landing",
@@ -427,11 +427,11 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     ],
     returns: "JSON documentation.",
     examples: [{ title: "Get landing docs summary", input: { mode: "summary" } }],
-    bestPractices: ["Prefer payloadcms_tools_documentation for full server docs."],
+    bestPractices: ["Prefer payload_tools_documentation for full server docs."],
     pitfalls: ["Limited to landing tools only."],
   },
-  payloadcms_tools_documentation: {
-    name: "payloadcms_tools_documentation",
+  payload_tools_documentation: {
+    name: "payload_tools_documentation",
     summary: "Full documentation for payloadcmsmcp tools.",
     description:
       "Returns overview and per-tool documentation in markdown or JSON. Similar to n8n_tools_documentation.",
@@ -446,7 +446,7 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     returns: "Documentation text.",
     examples: [
       { title: "Overview", input: { topic: "overview", depth: "essentials" } },
-      { title: "Full doc for payload_find", input: { topic: "payload_find", depth: "full" } },
+      { title: "Full doc for payload_api_find", input: { topic: "payload_api_find", depth: "full" } },
     ],
     bestPractices: ["Use overview to discover tools, then query per-tool docs."],
     pitfalls: ["Unknown topic returns list of valid tool names."],
@@ -461,7 +461,7 @@ function renderOverviewMarkdown(depth: "essentials" | "full") {
   lines.push("");
   lines.push("## Overview");
   lines.push(
-    "This MCP server provides Payload CMS tooling, landing schema helpers, and Payload API bridge tools. Use `payloadcms_tools_documentation` to discover tools and get per-tool details."
+    "This MCP server provides Payload CMS tooling, landing schema helpers, and Payload API bridge tools. Use `payload_tools_documentation` to discover tools and get per-tool details."
   );
   lines.push("");
   lines.push("## Tool Index");
@@ -475,7 +475,7 @@ function renderOverviewMarkdown(depth: "essentials" | "full") {
   lines.push("");
   lines.push("## Best Practices");
   lines.push("- Use dev by default; prod requires explicit `site` + `env`.");
-  lines.push("- Prefer specific tools (payload_find/update/...) over payload_api_request.");
+  lines.push("- Prefer specific tools (payload_api_find/update/...) over payload_api_request.");
   lines.push("- Keep payloads small (<1.5MB) and validate content before writes.");
   lines.push("- Treat destructive tools as high-risk, especially in prod.");
   lines.push("");

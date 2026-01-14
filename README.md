@@ -53,20 +53,20 @@ The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server de
 
 ### Validation Tools
 
-* `validate` - Validate code for collections, fields, globals, and config
-* `query` - Search a small built-in rule set (not a full best-practices DB)
-* `mcp_query` - Execute SQL-like queries against the built-in `validation_rules` table
+* `payload_validation_validate` - Validate code for collections, fields, globals, and config
+* `payload_validation_query` - Search a small built-in rule set (not a full best-practices DB)
+* `payload_validation_mcp_query` - Execute SQL-like queries against the built-in `validation_rules` table
 
 ### Code Generation
 
-* `generate_template` - Generate code templates for various components
-* `generate_collection` - Create complete collection definitions
-* `generate_field` - Generate field definitions with proper typing
+* `payload_template_generate` - Generate code templates for various components
+* `payload_collection_generate` - Create complete collection definitions
+* `payload_field_generate` - Generate field definitions with proper typing
 
 ### Project Setup
 
-* `scaffold_project` - Create entire Payload CMS project structures
-* `validate_scaffold_options` - Internal validator used by `scaffold_project` (not exposed as a tool)
+* `payload_scaffold_project_generate` - Create entire Payload CMS project structures
+* `validate_scaffold_options` - Internal validator used by `payload_scaffold_project_generate` (not exposed as a tool)
 
 <hr>
 
@@ -74,7 +74,7 @@ The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server de
 
 ### Validation Tools
 
-#### `validate`
+#### `payload_validation_validate`
 Validates Payload CMS code for syntax and best practices.
 
 **Parameters:**
@@ -82,7 +82,7 @@ Validates Payload CMS code for syntax and best practices.
 - `fileType` (enum): Type of file - "collection", "field", "global", or "config"
 
 **Important:**
-- `validate` uses `eval` on the provided string. **Do not** pass untrusted input.
+- `payload_validation_validate` uses `eval` on the provided string. **Do not** pass untrusted input.
 - The input must be a **plain JS object literal**. `import`/`export` statements will fail.
 
 **Example Prompt:**
@@ -109,7 +109,7 @@ Can you validate this Payload CMS collection code?
 }
 ```
 
-#### `query`
+#### `payload_validation_query`
 Searches a small **built-in** rule set (heuristics). Not a comprehensive best-practices database.
 
 **Parameters:**
@@ -121,7 +121,7 @@ Searches a small **built-in** rule set (heuristics). Not a comprehensive best-pr
 Find rules related to access control for collections.
 ```
 
-#### `mcp_query`
+#### `payload_validation_mcp_query`
 Executes SQL-like queries against the **built-in** `validation_rules` table.
 
 **Parameters:**
@@ -138,7 +138,7 @@ DESCRIBE validation_rules
 
 ### Code Generation
 
-#### `generate_template`
+#### `payload_template_generate`
 Generates code templates for various Payload CMS components.
 
 **Parameters:**
@@ -154,7 +154,7 @@ Generates code templates for various Payload CMS components.
 Generate a template for a Payload CMS hook that logs when a document is created.
 ```
 
-#### `generate_collection`
+#### `payload_collection_generate`
 Generates a complete Payload CMS collection definition.
 
 **Parameters:**
@@ -175,7 +175,7 @@ Generate a Payload CMS collection for a blog with title, content, author, and pu
 **Notes:**
 - The output is a starting point. You will usually need to add access control, admin labels, and Payload 3 import paths.
 
-#### `generate_field`
+#### `payload_field_generate`
 Generates a Payload CMS field definition.
 
 **Parameters:**
@@ -200,7 +200,7 @@ Generate a Payload CMS image field with validation that requires alt text and ha
 
 ### Project Setup
 
-#### `scaffold_project`
+#### `payload_scaffold_project_generate`
 Scaffolds a complete Payload CMS project structure.
 
 **Parameters:**
@@ -227,7 +227,7 @@ Scaffold a Payload CMS project called "blog-platform" with MongoDB, authenticati
 
 ### Landing GitOps (new)
 
-#### `payloadcms_tools_documentation`
+#### `payload_tools_documentation`
 Returns documentation for all payloadcmsmcp tools (overview or per-tool). Similar to `n8n_tools_documentation`.
 
 **Parameters:**
@@ -235,7 +235,7 @@ Returns documentation for all payloadcmsmcp tools (overview or per-tool). Simila
 - `depth` (optional enum): `essentials` | `full` (default essentials).
 - `format` (optional enum): `json` | `markdown` (default markdown).
 
-#### `landing_generate`
+#### `payload_landing_generate`
 Generate JSON for a landing block that matches the built-in landing schemas.
 Supported `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carousel`, `archive`, `threeItemGrid`, `formBlock`, `code`.
 
@@ -244,7 +244,7 @@ Supported `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carou
 - `preset` (optional enum): "minimal" | "full" (default full).
 - `locale` (optional enum): "en" | "ru" (affects sample text only).
 
-#### `landing_validate`
+#### `payload_landing_validate`
 Validate a landing document against schemas. Accepts a single block or `{ "sections": [...] }`.
 Input is a **JSON string**. In `mode: "loose"`, non-JSON input is skipped.
 
@@ -252,13 +252,13 @@ Input is a **JSON string**. In `mode: "loose"`, non-JSON input is skipped.
 - `document` (string): JSON string.
 - `mode` (optional enum): "strict" | "loose" (loose skips non-JSON).
 
-#### `landing_schema_list`
+#### `payload_landing_schema_list`
 Lists available landing block schemas.
 
-#### `landing_schema_get`
+#### `payload_landing_schema_get`
 Returns full JSON Schema for a given `blockType`.
 
-#### `landing_documentation`
+#### `payload_landing_documentation`
 Returns summary or detailed help for landing tools.
 
 ### Payload API Bridge (new)
@@ -273,10 +273,10 @@ If your API expects a different auth scheme (e.g. `users API-Key <token>`), pass
 - `PAYLOAD_API_KEY_PREFIX` (default: `users API-Key`)
 - `PAYLOAD_API_AUTH_HEADER_NAME` (default: `Authorization`)
 
-#### `payload_find` / `payload_create` / `payload_update` / `payload_delete`
+#### `payload_api_find` / `payload_api_create` / `payload_api_update` / `payload_api_delete`
 Convenience CRUD helpers for collections with optional `locale`.
 
-#### `payload_upload`
+#### `payload_api_upload`
 Upload a small file via multipart; params: `filename`, `mime`, `base64`, optional `relationTo` (default `media`).
 
 #### `payload_api_docs`
@@ -285,13 +285,13 @@ Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
 ## ⚠️ Known Limitations & Gotchas
 
 - **Validation uses `eval`**: only pass trusted input and **plain object literals** (no `import`/`export`).
-- **Rule base is small**: `query`/`mcp_query` search a limited in-repo rule set. Results may be empty.
+- **Rule base is small**: `payload_validation_query`/`payload_validation_mcp_query` search a limited in-repo rule set. Results may be empty.
 - **SQL tables are limited**: only `validation_rules` is supported (`payload_schema` is not).
 - **Payload 3 imports**: generated code uses `payload/types` and may need manual updates to `import type { ... } from 'payload'`.
-- **Blocks default fields**: `generate_template` for blocks adds `image` and `content` by default. Set `imageField: false` / `contentField: false` to disable.
+- **Blocks default fields**: `payload_template_generate` for blocks adds `image` and `content` by default. Set `imageField: false` / `contentField: false` to disable.
 - **Hooks are generic**: templates use `beforeOperation`/`afterOperation` and may need adjustment to your project conventions.
 - **API auth schemes**: tools support `PAYLOAD_API_AUTH_SCHEME` (`users-api-key`, `bearer`, `basic`, `api-key`, `none`) and custom header name/prefix.
-- **Scaffold output**: `scaffold_project` returns JSON structure, not files on disk.
+- **Scaffold output**: `payload_scaffold_project_generate` returns JSON structure, not files on disk.
 
 ## 🔌 Transport & Endpoints
 
@@ -320,7 +320,7 @@ The MCP server **requires Redis** for SSE sessions:
 Payload API tools require:
 - `PAYLOAD_API_URL_DEV` (required for payload_api_* tools; default target)
 - `PAYLOAD_API_URL_PROD` (required for payload_api_* tools when `site=synestra.io` and `env=prod`)
-- `PAYLOAD_PROD_ALLOWLIST` (CSV, default empty). Example: `payload_find,payload_update,payload_upload,payload_api_request_get`.
+- `PAYLOAD_PROD_ALLOWLIST` (CSV, default empty). Example: `payload_api_find,payload_api_update,payload_api_upload,payload_api_request_get`.
 - `PAYLOAD_PROD_ACCESS_MODE` (default `restricted`). Set to `unrestricted` to bypass allowlist for prod.
 - `PAYLOAD_API_SECRET` **or** `PAYLOAD_API_USER` + `PAYLOAD_API_PASS` (optional, for auth)
 - `PAYLOAD_API_AUTH_SCHEME` (optional): `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
@@ -370,7 +370,7 @@ User: I need to create a Payload CMS collection for a product catalog.
 
 AI: I'll help you create a product catalog collection. Let me generate a template for you.
 
-[Uses generate_collection tool]
+[Uses payload_collection_generate tool]
 
 Here's a collection template for your product catalog:
 
@@ -439,7 +439,7 @@ User: Can you validate this code to make sure it follows best practices?
 
 AI: I'll validate the code for you.
 
-[Uses validate tool]
+[Uses payload_validation_validate tool]
 
 The validation results show that your code is valid and follows best practices. Here are a few suggestions:
 
@@ -451,7 +451,7 @@ User: What are the best practices for access control in Payload CMS?
 
 AI: Let me query the validation rules for access control.
 
-[Uses query tool]
+[Uses payload_validation_query tool]
 
 Here are the **built-in** rules related to access control (note: the rule set is small and heuristic):
 
@@ -462,7 +462,7 @@ User: Now I need to scaffold a complete project with this product collection and
 
 AI: I'll scaffold a complete project for you.
 
-[Uses scaffold_project tool]
+[Uses payload_scaffold_project_generate tool]
 
 I've generated a complete Payload CMS project structure with the following:
 

@@ -180,7 +180,7 @@ export async function registerApiTools(server: McpServer) {
   );
 
   server.tool(
-    "payload_find",
+    "payload_api_find",
     "Find documents in a collection",
     {
       collection: z.string(),
@@ -202,8 +202,8 @@ export async function registerApiTools(server: McpServer) {
         ? `?${new URLSearchParams({ query: JSON.stringify(query) }).toString()}`
         : "";
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_find")) {
-        throw new Error("prod access denied: payload_find");
+      if (target.env === "prod" && !isProdAllowed("payload_api_find")) {
+        throw new Error("prod access denied: payload_api_find");
       }
       const res = await doFetch({
         method: "GET",
@@ -219,7 +219,7 @@ export async function registerApiTools(server: McpServer) {
   );
 
   server.tool(
-    "payload_create",
+    "payload_api_create",
     "Create a document",
     {
       collection: z.string(),
@@ -231,8 +231,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, data, locale, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_create")) {
-        throw new Error("prod access denied: payload_create");
+      if (target.env === "prod" && !isProdAllowed("payload_api_create")) {
+        throw new Error("prod access denied: payload_api_create");
       }
       const path = `/api/${collection}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
@@ -250,7 +250,7 @@ export async function registerApiTools(server: McpServer) {
   );
 
   server.tool(
-    "payload_update",
+    "payload_api_update",
     "Update a document by ID",
     {
       collection: z.string(),
@@ -263,8 +263,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, data, locale, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_update")) {
-        throw new Error("prod access denied: payload_update");
+      if (target.env === "prod" && !isProdAllowed("payload_api_update")) {
+        throw new Error("prod access denied: payload_api_update");
       }
       const path = `/api/${collection}/${id}${locale ? `?locale=${locale}` : ""}`;
       const res = await doFetch({
@@ -282,7 +282,7 @@ export async function registerApiTools(server: McpServer) {
   );
 
   server.tool(
-    "payload_delete",
+    "payload_api_delete",
     "Delete a document by ID",
     {
       collection: z.string(),
@@ -293,8 +293,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ collection, id, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_delete")) {
-        throw new Error("prod access denied: payload_delete");
+      if (target.env === "prod" && !isProdAllowed("payload_api_delete")) {
+        throw new Error("prod access denied: payload_api_delete");
       }
       const path = `/api/${collection}/${id}`;
       const res = await doFetch({
@@ -311,7 +311,7 @@ export async function registerApiTools(server: McpServer) {
   );
 
   server.tool(
-    "payload_upload",
+    "payload_api_upload",
     "Upload a file (base64) to Payload",
     {
       filename: z.string(),
@@ -324,8 +324,8 @@ export async function registerApiTools(server: McpServer) {
     },
     async ({ filename, mime, base64, relationTo, headers, env, site }) => {
       const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_upload")) {
-        throw new Error("prod access denied: payload_upload");
+      if (target.env === "prod" && !isProdAllowed("payload_api_upload")) {
+        throw new Error("prod access denied: payload_api_upload");
       }
       const buffer = Buffer.from(base64, "base64");
       if (buffer.byteLength > MAX_BODY_BYTES) {

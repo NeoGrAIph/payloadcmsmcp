@@ -42,13 +42,13 @@ function registerToolsListOverride(server: McpServer) {
 const handler = initializeMcpApiHandler(
   (server) => {
     // Echo tool for testing
-    server.tool("echo", "Echo a message", { message: z.string() }, async ({ message }) => ({
+    server.tool("payload_echo", "Echo a message", { message: z.string() }, async ({ message }) => ({
       content: [{ type: "text", text: `Tool echo: ${message}` }],
     }));
 
     // Validate Payload CMS code
     server.tool(
-      "validate",
+      "payload_validation_validate",
       "Validate Payload CMS code",
       {
         code: z.string(),
@@ -69,7 +69,7 @@ const handler = initializeMcpApiHandler(
 
     // Query validation rules
     server.tool(
-      "query",
+      "payload_validation_query",
       "Query validation rules for Payload CMS",
       {
         query: z.string(),
@@ -90,7 +90,7 @@ const handler = initializeMcpApiHandler(
 
     // Execute SQL-like query
     server.tool(
-      "mcp_query",
+      "payload_validation_mcp_query",
       "Execute SQL-like query against validation rules",
       {
         sql: z.string(),
@@ -121,7 +121,7 @@ const handler = initializeMcpApiHandler(
 
     // Generate Payload CMS 3 code templates
     server.tool(
-      "generate_template",
+      "payload_template_generate",
       "Generate Payload CMS 3 code templates",
       {
         templateType: z.enum([
@@ -164,7 +164,7 @@ const handler = initializeMcpApiHandler(
 
     // Generate a complete Payload CMS 3 collection
     server.tool(
-      "generate_collection",
+      "payload_collection_generate",
       "Generate a complete Payload CMS 3 collection",
       {
         slug: z.string(),
@@ -213,7 +213,7 @@ const handler = initializeMcpApiHandler(
 
     // Generate a Payload CMS 3 field
     server.tool(
-      "generate_field",
+      "payload_field_generate",
       "Generate a Payload CMS 3 field",
       {
         name: z.string(),
@@ -255,7 +255,7 @@ const handler = initializeMcpApiHandler(
 
     // Scaffold a complete Payload CMS 3 project
     server.tool(
-      "scaffold_project",
+      "payload_scaffold_project_generate",
       "Scaffold a complete Payload CMS 3 project structure",
       {
         projectName: z.string(),
@@ -362,7 +362,7 @@ const handler = initializeMcpApiHandler(
 
     // Documentation for payloadcmsmcp tools
     server.tool(
-      "payloadcms_tools_documentation",
+      "payload_tools_documentation",
       "Documentation for payloadcmsmcp tools (overview or per-tool)",
       {
         topic: z.string().optional(),
