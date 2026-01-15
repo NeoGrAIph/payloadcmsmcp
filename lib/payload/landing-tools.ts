@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loadLandingSchemas, validateLandingBlock, listLandingSchemas } from "./landing-schemas";
+import { getPayloadcmsToolsDocumentation } from "./tools-documentation";
 import fs from "fs/promises";
 import path from "path";
 
@@ -54,6 +55,56 @@ const samples: Record<string, any> = {
     ],
   },
 };
+
+type LandingToolSummary = { name: string; desc: string };
+
+function getLandingToolsSummary(): LandingToolSummary[] {
+  const overview = getPayloadcmsToolsDocumentation({
+    topic: "overview",
+    depth: "essentials",
+    format: "json",
+  }) as any;
+  const tools = Array.isArray(overview?.tools) ? overview.tools : [];
+  return tools
+    .filter((tool: any) => tool?.category === "landing")
+    .map((tool: any) => ({
+      name: tool?.name || "",
+      desc: tool?.summary || tool?.description || "",
+    }))
+    .filter((item: LandingToolSummary) => item.name);
+}
+
+function getLandingToolDetails(toolName: string) {
+  const doc = getPayloadcmsToolsDocumentation({
+    topic: toolName,
+    depth: "full",
+    format: "json",
+  }) as any;
+  if (!doc || doc.error || doc.category !== "landing") {
+    return null;
+  }
+  const params: Record<string, string> = {};
+  if (Array.isArray(doc.parameters)) {
+    doc.parameters.forEach((param: any) => {
+      if (!param?.name) return;
+      const parts: string[] = [];
+      if (param.type) parts.push(param.type);
+      if (param.required) parts.push("required");
+      if (param.default !== undefined) parts.push(`default: ${param.default}`);
+      params[param.name] = parts.join(", ");
+    });
+  }
+  return {
+    name: doc.name,
+    summary: doc.summary,
+    description: doc.description,
+    params,
+    example: doc.examples?.[0]?.input,
+    readOnly: doc.readOnly,
+    destructive: doc.destructive,
+    returns: doc.returns,
+  };
+}
 
 export async function registerLandingTools(server: McpServer) {
   const validators = await loadLandingSchemas().catch(() => ({}));
@@ -138,33 +189,13 @@ export async function registerLandingTools(server: McpServer) {
       toolName: z.string().optional(),
     },
     async ({ mode = "summary", toolName }) => {
-      const summary = [
-        { name: "payload_landing_generate", desc: "Generate JSON for a landing block (matches schema)" },
-        { name: "payload_landing_validate", desc: "Validate JSON (sections[] or single block) against schemas" },
-        { name: "payload_landing_schema_list", desc: "List available block schemas" },
-        { name: "payload_landing_schema_get", desc: "Get full JSON Schema by blockType" },
-        { name: "payload_landing_documentation", desc: "This help tool" },
-      ];
+      const summary = getLandingToolsSummary();
       if (mode === "summary") {
         return { content: [{ type: "text", text: JSON.stringify(summary, null, 2) }] };
       }
       if (toolName) {
-        const details: Record<string, any> = {
-          payload_landing_generate: {
-            description: "Generate a sample payload for a landing block. Use preset=minimal to get only blockType.",
-            params: { blockType: "string", preset: "minimal|full", locale: "en|ru" },
-            example: { blockType: "content", preset: "full" },
-          },
-          payload_landing_validate: {
-            description: "Validate a document JSON (single block or sections[]) against the schemas.",
-            params: { document: "JSON string", mode: "strict|loose" },
-            example: { document: "{\"sections\":[{\"blockType\":\"content\",\"richText\":\"Hi\"}]}" },
-          },
-          payload_landing_schema_list: { description: "List blockType names that have schemas", params: {} },
-          payload_landing_schema_get: { description: "Return full JSON Schema for blockType", params: { blockType: "string" } },
-          payload_landing_documentation: { description: "Return help for landing tools", params: { mode: "summary|tool", toolName: "string" } },
-        };
-        return { content: [{ type: "text", text: JSON.stringify(details[toolName] || {}, null, 2) }] };
+        const details = getLandingToolDetails(toolName);
+        return { content: [{ type: "text", text: JSON.stringify(details || {}, null, 2) }] };
       }
       return { content: [{ type: "text", text: "Unknown mode" }] };
     }
