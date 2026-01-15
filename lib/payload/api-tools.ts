@@ -100,15 +100,35 @@ function ensureLandingIdentifier(id?: string, slug?: string) {
   if (!id && !slug) throw new Error("id or slug is required");
 }
 
+function appendWhereParams(params: URLSearchParams, value: any, path: string) {
+  if (value === undefined) return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => appendWhereParams(params, item, `${path}[${index}]`));
+    return;
+  }
+  if (isPlainObject(value)) {
+    for (const [key, nested] of Object.entries(value)) {
+      appendWhereParams(params, nested, `${path}[${key}]`);
+    }
+    return;
+  }
+  params.set(path, String(value));
+}
+
 function buildQueryString(query?: Record<string, any>, draft?: boolean): string {
   const params = new URLSearchParams();
   if (query && Object.keys(query).length) {
-    for (const [key, value] of Object.entries(query)) {
-      if (value === undefined) continue;
-      if (key === "where") {
-        params.set("where", typeof value === "string" ? value : JSON.stringify(value));
-        continue;
+    if (query.where !== undefined) {
+      const whereValue = query.where;
+      if (typeof whereValue === "string") {
+        params.set("where", whereValue);
+      } else {
+        appendWhereParams(params, whereValue, "where");
       }
+    }
+    for (const [key, value] of Object.entries(query)) {
+      if (key === "where") continue;
+      if (value === undefined) continue;
       if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         params.set(key, String(value));
         continue;
