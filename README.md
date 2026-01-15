@@ -304,7 +304,7 @@ List blocks with indexes and summaries to target specific sections.
 Get a single block by index or blockId.
 
 #### `payload_landing_create` / `payload_landing_update`
-Create or update top-level fields of a landing.
+Create or update top-level fields of a landing. `payload_landing_update` defaults to **safe** mode (arrays merged by `id/_id`). To use legacy shallow updates, set `mode: "merge"` and `allowUnsafe: true`.
 
 #### `payload_landing_block_add` / `payload_landing_block_update` / `payload_landing_block_remove` / `payload_landing_block_move`
 Add/update/remove/reorder blocks in `sections`. `payload_landing_block_update` defaults to **safe** mode: deep merge with array items merged by `id/_id` (prevents accidental deletion). To use legacy shallow merge or full replace, set `mode: "merge"|"replace"` **and** `allowUnsafe: true`.

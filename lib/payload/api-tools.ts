@@ -276,6 +276,30 @@ function deepMergeSafe(target: any, patch: any, pathLabel = "block"): any {
   return base;
 }
 
+function buildSafePatch(current: any, patch: any, pathLabel = "data"): any {
+  if (Array.isArray(patch)) {
+    if (current === undefined || current === null) {
+      throw new Error(
+        `safe mode requires existing array at ${pathLabel}; use mode=merge with allowUnsafe=true to overwrite arrays`
+      );
+    }
+    if (!Array.isArray(current)) {
+      throw new Error(`safe mode expected array at ${pathLabel}; use mode=merge with allowUnsafe=true`);
+    }
+    return mergeArrayById(current, patch, pathLabel);
+  }
+
+  if (!isPlainObject(patch)) return patch;
+
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(patch)) {
+    const nextPath = pathLabel ? `${pathLabel}.${key}` : key;
+    const currentValue = current && (isPlainObject(current) || Array.isArray(current)) ? current[key] : undefined;
+    out[key] = buildSafePatch(currentValue, value, nextPath);
+  }
+  return out;
+}
+
 function getBaseUrl(env?: string): string {
   const selected = (env || "dev").toLowerCase();
   if (selected === "prod") {
@@ -824,20 +848,33 @@ export async function registerApiTools(server: McpServer) {
       id: z.string().optional(),
       slug: z.string().optional(),
       data: z.record(z.any()),
+      mode: z.enum(["safe", "merge"]).optional().default("safe"),
+      allowUnsafe: z.boolean().optional().default(false),
       locale: z.enum(["ru", "en"]).optional().default("ru"),
       draft: z.boolean().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ id, slug, data, locale, draft, headers, env, site }) => {
+    async ({ id, slug, data, mode, allowUnsafe, locale, draft, headers, env, site }) => {
       const target = resolveTarget(site, env);
       if (target.env === "prod" && !isProdAllowed("payload_landing_update")) {
         throw new Error("prod access denied: payload_landing_update");
       }
+      if (mode !== "safe" && !allowUnsafe) {
+        throw new Error("unsafe mode requires allowUnsafe=true");
+      }
       const resolvedId = await resolveLandingId({ id, slug, locale, draft, env, site, headers });
       const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: data, headers, env, site });
+      const body =
+        mode === "safe"
+          ? buildSafePatch(
+              await fetchLandingDoc({ id: resolvedId, locale, draft, env, site, headers }),
+              data,
+              "data"
+            )
+          : data;
+      const res = await doFetch({ method: "PATCH", path, body, headers, env, site });
       return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
     }
   );

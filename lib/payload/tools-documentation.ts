@@ -522,8 +522,9 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
   },
   payload_landing_update: {
     name: "payload_landing_update",
-    summary: "Update landing top-level fields.",
-    description: "Updates top-level fields on a landing document.",
+    summary: "Safely update landing top-level fields.",
+    description:
+      "Default safe mode merges arrays by id/_id to prevent accidental data loss; legacy shallow update requires allowUnsafe=true.",
     category: "landing",
     readOnly: false,
     destructive: true,
@@ -531,6 +532,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
       { name: "id", type: "string", description: "Landing id." },
       { name: "slug", type: "string", description: "Landing slug." },
       { name: "data", type: "object", required: true, description: "Partial update payload." },
+      { name: "mode", type: "enum(safe|merge)", description: "Update mode (default safe)." },
+      { name: "allowUnsafe", type: "boolean", description: "Required for merge mode." },
       { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
       { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
       { name: "headers", type: "object", description: "Extra headers." },
@@ -539,8 +542,15 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     ],
     returns: "JSON with status, ok, and data.",
     examples: [{ title: "Update hero title", input: { slug: "main", data: { heroH1: "New title" } } }],
-    bestPractices: ["Use for small top-level edits; use block tools for sections."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+    bestPractices: [
+      "Use default safe mode for precise edits.",
+      "Include id/_id for array items to update them without replacing the full array.",
+      "Use merge only with allowUnsafe=true when you intend to overwrite arrays.",
+    ],
+    pitfalls: [
+      "Safe mode rejects arrays without id/_id; use allowUnsafe when you need full replacement.",
+      "Prod gated by site+env and allowlist in restricted mode.",
+    ],
   },
   payload_landing_block_add: {
     name: "payload_landing_block_add",
