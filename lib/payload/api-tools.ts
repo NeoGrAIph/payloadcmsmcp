@@ -103,7 +103,18 @@ function ensureLandingIdentifier(id?: string, slug?: string) {
 function buildQueryString(query?: Record<string, any>, draft?: boolean): string {
   const params = new URLSearchParams();
   if (query && Object.keys(query).length) {
-    params.set("query", JSON.stringify(query));
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined) continue;
+      if (key === "where") {
+        params.set("where", typeof value === "string" ? value : JSON.stringify(value));
+        continue;
+      }
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+        params.set(key, String(value));
+        continue;
+      }
+      params.set(key, JSON.stringify(value));
+    }
   }
   if (draft !== undefined) {
     params.set("draft", String(draft));
