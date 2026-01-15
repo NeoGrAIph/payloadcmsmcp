@@ -221,6 +221,61 @@ function buildMcpMeta(targetEnv: "dev" | "prod") {
   };
 }
 
+function isPlainObject(value: any): value is Record<string, any> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function getItemId(value: any): string | undefined {
+  if (!isPlainObject(value)) return undefined;
+  return (value as any).id || (value as any)._id;
+}
+
+function mergeArrayById(targetArr: any[], patchArr: any[], pathLabel: string) {
+  if (!patchArr.length) {
+    throw new Error(
+      `safe mode disallows empty array patch at ${pathLabel}; use mode=replace with allowUnsafe=true to overwrite arrays`
+    );
+  }
+  const out = targetArr.slice();
+  for (const patchItem of patchArr) {
+    const id = getItemId(patchItem);
+    if (!id) {
+      throw new Error(
+        `safe mode requires array items with id/_id at ${pathLabel}; use mode=merge with allowUnsafe=true to overwrite arrays`
+      );
+    }
+    const idx = out.findIndex((item: any) => {
+      const itemId = getItemId(item);
+      return itemId && itemId === id;
+    });
+    if (idx >= 0) {
+      out[idx] = deepMergeSafe(out[idx], patchItem, `${pathLabel}[${id}]`);
+    } else {
+      out.push(patchItem);
+    }
+  }
+  return out;
+}
+
+function deepMergeSafe(target: any, patch: any, pathLabel = "block"): any {
+  if (Array.isArray(patch)) {
+    if (target === undefined || target === null) return patch;
+    if (!Array.isArray(target)) {
+      throw new Error(`safe mode expected array at ${pathLabel}; use mode=merge with allowUnsafe=true`);
+    }
+    return mergeArrayById(target, patch, pathLabel);
+  }
+
+  if (!isPlainObject(patch)) return patch;
+
+  const base = isPlainObject(target) ? { ...target } : {};
+  for (const [key, value] of Object.entries(patch)) {
+    const nextPath = pathLabel ? `${pathLabel}.${key}` : key;
+    base[key] = deepMergeSafe((base as any)[key], value, nextPath);
+  }
+  return base;
+}
+
 function getBaseUrl(env?: string): string {
   const selected = (env || "dev").toLowerCase();
   if (selected === "prod") {
@@ -832,7 +887,8 @@ export async function registerApiTools(server: McpServer) {
       index: z.number().int().min(0).optional(),
       blockId: z.string().optional(),
       patch: z.record(z.any()),
-      mode: z.enum(["merge", "replace"]).optional().default("merge"),
+      mode: z.enum(["safe", "merge", "replace"]).optional().default("safe"),
+      allowUnsafe: z.boolean().optional().default(false),
       sectionsField: z.string().optional(),
       locale: z.enum(["ru", "en"]).optional().default("ru"),
       draft: z.boolean().optional(),
@@ -840,13 +896,16 @@ export async function registerApiTools(server: McpServer) {
       env: z.enum(["dev", "prod"]).optional(),
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ id, slug, index, blockId, patch, mode, sectionsField, locale, draft, headers, env, site }) => {
+    async ({ id, slug, index, blockId, patch, mode, allowUnsafe, sectionsField, locale, draft, headers, env, site }) => {
       const target = resolveTarget(site, env);
       if (target.env === "prod" && !isProdAllowed("payload_landing_block_update")) {
         throw new Error("prod access denied: payload_landing_block_update");
       }
       if (blockId === undefined && index === undefined) {
         throw new Error("blockId or index is required");
+      }
+      if (mode !== "safe" && !allowUnsafe) {
+        throw new Error("unsafe mode requires allowUnsafe=true");
       }
       const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
       const resolvedId = doc?.id || doc?._id;
@@ -863,7 +922,11 @@ export async function registerApiTools(server: McpServer) {
         throw new Error("block not found");
       }
       const current = copy[resolvedIndex];
-      const next = mode === "replace" ? patch : { ...current, ...patch };
+      const next = mode === "replace"
+        ? patch
+        : mode === "merge"
+          ? { ...current, ...patch }
+          : deepMergeSafe(current, patch);
       copy[resolvedIndex] = next;
       const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
       const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });

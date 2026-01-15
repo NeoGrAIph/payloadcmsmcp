@@ -568,8 +568,9 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
   },
   payload_landing_block_update: {
     name: "payload_landing_block_update",
-    summary: "Update a landing block by index or blockId.",
-    description: "Updates a block in sections with merge or replace mode.",
+    summary: "Safely update a landing block by index or blockId.",
+    description:
+      "Default safe mode performs deep merge and merges array items by id/_id; legacy shallow merge/replace requires allowUnsafe=true.",
     category: "landing",
     readOnly: false,
     destructive: true,
@@ -579,7 +580,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
       { name: "index", type: "number", description: "Block index in sections." },
       { name: "blockId", type: "string", description: "Block id (if present)." },
       { name: "patch", type: "object", required: true, description: "Fields to merge or full block for replace." },
-      { name: "mode", type: "enum(merge|replace)", description: "Update mode (default merge)." },
+      { name: "mode", type: "enum(safe|merge|replace)", description: "Update mode (default safe)." },
+      { name: "allowUnsafe", type: "boolean", description: "Required for merge/replace modes." },
       { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
       { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
       { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
@@ -589,8 +591,15 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     ],
     returns: "JSON with status, ok, and data.",
     examples: [{ title: "Update hero heading", input: { slug: "main", index: 0, patch: { heading: "New" } } }],
-    bestPractices: ["Use merge mode for small edits; replace only when needed."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+    bestPractices: [
+      "Use default safe mode for precise edits.",
+      "Include id/_id for array items to update them without replacing the full array.",
+      "Use merge/replace only with allowUnsafe=true and only when you intend full overwrite.",
+    ],
+    pitfalls: [
+      "Safe mode rejects arrays without id/_id; use allowUnsafe when you need full replacement.",
+      "Prod gated by site+env and allowlist in restricted mode.",
+    ],
   },
   payload_landing_block_remove: {
     name: "payload_landing_block_remove",
