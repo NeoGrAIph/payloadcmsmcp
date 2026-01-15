@@ -214,6 +214,13 @@ function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
   return { env: "dev" };
 }
 
+function buildMcpMeta(targetEnv: "dev" | "prod") {
+  return {
+    env: targetEnv,
+    site: targetEnv === "prod" ? PROD_SITE : DEV_SITE,
+  };
+}
+
 function getBaseUrl(env?: string): string {
   const selected = (env || "dev").toLowerCase();
   if (selected === "prod") {
@@ -277,7 +284,7 @@ async function doFetch(opts: {
     } catch {
       /* keep text */
     }
-    return { status: res.status, ok: res.ok, data: parsed };
+    return { status: res.status, ok: res.ok, data: parsed, _mcp: buildMcpMeta(target.env) };
   } catch (err) {
     const msg = (err as Error).message.replace(
       process.env.PAYLOAD_API_SECRET || "",
@@ -468,8 +475,7 @@ export async function registerApiTools(server: McpServer) {
       if (buffer.byteLength > MAX_BODY_BYTES) {
         throw new Error("Upload too large (>1.5MB)");
       }
-      const selected = resolveTarget(site, env);
-      const url = ensureUrl(`/api/${relationTo}`, selected.env);
+      const url = ensureUrl(`/api/${relationTo}`, target.env);
       const authHeaders = buildAuthHeaders();
       const form = new FormData();
       form.append("file", new Blob([buffer], { type: mime }), filename);
@@ -490,7 +496,18 @@ export async function registerApiTools(server: McpServer) {
         } catch {
           /* noop */
         }
-        return { content: [{ type: "text", text: JSON.stringify({ status: res.status, ok: res.ok, data }, null, 2) }] };
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                { status: res.status, ok: res.ok, data, _mcp: buildMcpMeta(target.env) },
+                null,
+                2
+              ),
+            },
+          ],
+        };
       } finally {
         clearTimeout(timeout);
       }
@@ -589,7 +606,8 @@ export async function registerApiTools(server: McpServer) {
         throw new Error("prod access denied: payload_landing_get");
       }
       const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      return { content: [{ type: "text", text: JSON.stringify(doc, null, 2) }] };
+      const payload = { ...(doc || {}), _mcp: buildMcpMeta(target.env) };
+      return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     }
   );
 
@@ -632,6 +650,7 @@ export async function registerApiTools(server: McpServer) {
         slug: doc?.slug,
         hero,
         heroBlock,
+        _mcp: buildMcpMeta(target.env),
       };
       return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     }
@@ -664,7 +683,14 @@ export async function registerApiTools(server: McpServer) {
         blockName: block?.blockName,
         summary: summarizeBlock(block),
       }));
-      return { content: [{ type: "text", text: JSON.stringify({ field, blocks }, null, 2) }] };
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ field, blocks, _mcp: buildMcpMeta(target.env) }, null, 2),
+          },
+        ],
+      };
     }
   );
 
@@ -707,7 +733,7 @@ export async function registerApiTools(server: McpServer) {
         content: [
           {
             type: "text",
-            text: JSON.stringify({ field, index: resolvedIndex, block }, null, 2),
+            text: JSON.stringify({ field, index: resolvedIndex, block, _mcp: buildMcpMeta(target.env) }, null, 2),
           },
         ],
       };

@@ -263,6 +263,8 @@ Returns summary or detailed help for landing tools.
 
 ### Payload API Bridge (new)
 
+**Responses:** all site-bound tools include `_mcp` with resolved `{ env, site }`.
+
 #### `payload_api_request`
 Raw HTTP call to Payload API (base from `PAYLOAD_API_URL_DEV`/`PAYLOAD_API_URL_PROD`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`, optional `site` (`dev.synestra.io` default / `synestra.io`), optional `env` (`dev` default / `prod`). **Prod requires both** `site: "synestra.io"` and `env: "prod"`, plus allowlist unless `PAYLOAD_PROD_ACCESS_MODE=unrestricted`.
 Auth by default: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).

@@ -33,6 +33,35 @@ export type ToolAnnotations = {
   openWorldHint: boolean;
 };
 
+const SITE_BOUND_TOOLS = new Set([
+  "payload_api_request",
+  "payload_api_find",
+  "payload_api_create",
+  "payload_api_update",
+  "payload_api_delete",
+  "payload_api_upload",
+  "payload_landing_list",
+  "payload_landing_get",
+  "payload_landing_hero_get",
+  "payload_landing_blocks_list",
+  "payload_landing_block_get",
+  "payload_landing_create",
+  "payload_landing_update",
+  "payload_landing_block_add",
+  "payload_landing_block_update",
+  "payload_landing_block_remove",
+  "payload_landing_block_move",
+  "payload_landing_set_status",
+]);
+
+const MCP_META_NOTE = "Response always includes `_mcp` with resolved { env, site }.";
+
+function getReturnsWithMeta(doc: ToolDoc) {
+  if (!SITE_BOUND_TOOLS.has(doc.name)) return doc.returns;
+  if (doc.returns.includes("_mcp")) return doc.returns;
+  return `${doc.returns} ${MCP_META_NOTE}`;
+}
+
 const TOOL_DOCS: Record<string, ToolDoc> = {
   payload_echo: {
     name: "payload_echo",
@@ -752,6 +781,7 @@ function renderOverviewMarkdown(depth: "essentials" | "full") {
   lines.push("");
   lines.push("## Best Practices");
   lines.push("- Use dev by default; prod requires explicit `site` + `env`.");
+  lines.push("- Site-bound tools include `_mcp` in responses with resolved env/site.");
   lines.push("- Prefer specific tools (payload_api_find/update/...) over payload_api_request.");
   lines.push("- Keep payloads small (<1.5MB) and validate content before writes.");
   lines.push("- Treat destructive tools as high-risk, especially in prod.");
@@ -782,7 +812,7 @@ function renderToolMarkdown(doc: ToolDoc, depth: "essentials" | "full") {
   }
   lines.push("");
   lines.push("## Returns");
-  lines.push(doc.returns);
+  lines.push(getReturnsWithMeta(doc));
   if (depth === "full") {
     lines.push("");
     lines.push("## Examples");
@@ -812,7 +842,7 @@ function renderToolJson(doc: ToolDoc, depth: "essentials" | "full") {
       readOnly: doc.readOnly,
       destructive: doc.destructive,
       parameters: doc.parameters,
-      returns: doc.returns,
+      returns: getReturnsWithMeta(doc),
     };
   }
   return doc;
