@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { resolveDraft } from "./draft-utils.mjs";
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_BODY_BYTES = 1_500_000; // ~1.5 MB
@@ -671,6 +672,7 @@ export async function registerApiTools(server: McpServer) {
       if (target.env === "prod" && !isProdAllowed("payload_landing_list")) {
         throw new Error("prod access denied: payload_landing_list");
       }
+      const effectiveDraft = resolveDraft({ status, draft, where });
       let finalWhere = where || {};
       if (status) {
         const statusFilter = { _status: { equals: status } };
@@ -689,7 +691,7 @@ export async function registerApiTools(server: McpServer) {
 
       const res = await doFetch({
         method: "GET",
-        path: `/api/${LANDING_COLLECTION}${buildQueryString(query, draft)}`,
+        path: `/api/${LANDING_COLLECTION}${buildQueryString(query, effectiveDraft)}`,
         headers,
         env,
         site,
@@ -704,18 +706,20 @@ export async function registerApiTools(server: McpServer) {
     {
       id: z.string().optional(),
       slug: z.string().optional(),
+      status: z.enum(["draft", "published"]).optional(),
       locale: z.enum(["ru", "en"]).optional().default("ru"),
       draft: z.boolean().optional(),
       headers: z.record(z.string()).optional(),
       env: z.enum(["dev", "prod"]).optional(),
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ id, slug, locale, draft, headers, env, site }) => {
+    async ({ id, slug, status, locale, draft, headers, env, site }) => {
       const target = resolveTarget(site, env);
       if (target.env === "prod" && !isProdAllowed("payload_landing_get")) {
         throw new Error("prod access denied: payload_landing_get");
       }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
+      const effectiveDraft = resolveDraft({ status, draft });
+      const doc = await fetchLandingDoc({ id, slug, locale, draft: effectiveDraft, env, site, headers });
       const payload = { ...(doc || {}), _mcp: buildMcpMeta(target.env) };
       return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
     }
@@ -772,6 +776,7 @@ export async function registerApiTools(server: McpServer) {
     {
       id: z.string().optional(),
       slug: z.string().optional(),
+      status: z.enum(["draft", "published"]).optional(),
       locale: z.enum(["ru", "en"]).optional().default("ru"),
       draft: z.boolean().optional(),
       sectionsField: z.string().optional(),
@@ -779,12 +784,13 @@ export async function registerApiTools(server: McpServer) {
       env: z.enum(["dev", "prod"]).optional(),
       site: z.enum([DEV_SITE, PROD_SITE]).optional(),
     },
-    async ({ id, slug, locale, draft, sectionsField, headers, env, site }) => {
+    async ({ id, slug, status, locale, draft, sectionsField, headers, env, site }) => {
       const target = resolveTarget(site, env);
       if (target.env === "prod" && !isProdAllowed("payload_landing_blocks_list")) {
         throw new Error("prod access denied: payload_landing_blocks_list");
       }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
+      const effectiveDraft = resolveDraft({ status, draft });
+      const doc = await fetchLandingDoc({ id, slug, locale, draft: effectiveDraft, env, site, headers });
       const { field, sections } = ensureSections(doc, sectionsField);
       const blocks = sections.map((block: any, index: number) => ({
         index,

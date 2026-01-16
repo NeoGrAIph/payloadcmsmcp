@@ -289,16 +289,16 @@ Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
 These tools operate **only** on the `landing` collection and are designed for editor-friendly workflows.
 
 #### `payload_landing_list`
-List landing documents with filters (status/locale/pagination).
+List landing documents with filters (status/locale/pagination). If `status=draft`, the server forces `draft=true` (including when `where` uses `_status=draft`).
 
 #### `payload_landing_get`
-Get a landing by `id` or `slug`.
+Get a landing by `id` or `slug`. Optional `status` parameter; `status=draft` forces `draft=true`.
 
 #### `payload_landing_hero_get`
 Get hero-related top-level fields and optional hero block.
 
 #### `payload_landing_blocks_list`
-List blocks with indexes and summaries to target specific sections.
+List blocks with indexes and summaries to target specific sections. Optional `status` parameter; `status=draft` forces `draft=true`.
 
 #### `payload_landing_block_get`
 Get a single block by index or blockId.

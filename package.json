@@ -1,13 +1,13 @@
 {
   "name": "payload-cms-mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Payload CMS 3.0 MCP Server - A specialized Model Context Protocol server for Payload CMS",
   "main": "server.js",
   "bin": {
     "payload-cms-mcp": "./server.js"
   },
   "scripts": {
-    "test": "echo \"No tests specified\"",
+    "test": "node scripts/draft-status.test.mjs",
     "start": "node server.js",
     "dev": "node server.js",
     "local": "node server.js",
