@@ -229,23 +229,28 @@ export async function registerCollectionTools(server: McpServer) {
           throw new Error(`prod access denied: ${names.create}`);
         }
         let effectiveDraft = draft;
+        const body = { ...data } as Record<string, any>;
         if (collection.hasDrafts && status) {
           const statusDraft = status === "draft";
           if (draft !== undefined && draft !== statusDraft) {
             throw new Error("status conflicts with draft; provide only one");
           }
+          if (body._status !== undefined && body._status !== status) {
+            throw new Error("status conflicts with data._status");
+          }
+          body._status = status;
           effectiveDraft = statusDraft;
         }
         const path = `/api/${collection.slug}${buildLocaleDraftQuery(locale, effectiveDraft)}`;
         const res = await doFetch({
           method: "POST",
           path,
-          body: data,
+          body,
           headers,
-            env,
-            site,
-          });
-          return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+          env,
+          site,
+        });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
         }
       );
     }
@@ -336,7 +341,14 @@ export async function registerCollectionTools(server: McpServer) {
           });
           const draft = status === "draft";
           const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-          const res = await doFetch({ method: "PATCH", path, body: {}, headers, env, site });
+          const res = await doFetch({
+            method: "PATCH",
+            path,
+            body: { _status: status },
+            headers,
+            env,
+            site,
+          });
           return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
         }
       );

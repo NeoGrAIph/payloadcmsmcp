@@ -180,7 +180,7 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
       docs[createName] = {
         name: createName,
         summary: `Create a ${collection.slug} document.`,
-        description: `Creates a document in the ${collection.slug} collection.`,
+        description: `Creates a document in the ${collection.slug} collection. For draft-enabled collections, status sets _status.`,
         category: "collection",
         readOnly: false,
         destructive: true,
@@ -195,7 +195,7 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
         examples: [{ title: `Create ${collection.slug}`, input: { data: {} } }],
         bestPractices: ["Use dev by default; keep payloads minimal."],
         pitfalls: [
-          ...(collection.hasDrafts ? ["Provide either status or draft (not both)."] : []),
+          ...(collection.hasDrafts ? ["Provide either status or draft (not both).", "If data._status is set, it must match status."] : []),
           "Prod gated by site+env and allowlist in restricted mode.",
         ],
       };
