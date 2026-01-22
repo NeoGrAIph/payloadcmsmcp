@@ -7,6 +7,7 @@
     "payload-cms-mcp": "./server.js"
   },
   "scripts": {
+    "generate:collection-tools": "node scripts/generate-collection-tools.mjs",
     "test": "node scripts/draft-status.test.mjs",
     "start": "node server.js",
     "dev": "node server.js",

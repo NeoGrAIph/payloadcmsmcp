@@ -1,3 +1,6 @@
+import { COLLECTIONS } from "./collection-tools.generated";
+import { getCollectionToolNames } from "./collection-tools";
+
 type ToolParam = {
   name: string;
   type: string;
@@ -33,6 +36,8 @@ export type ToolAnnotations = {
   openWorldHint: boolean;
 };
 
+const COLLECTION_TOOL_NAMES = getCollectionToolNames();
+
 const SITE_BOUND_TOOLS = new Set([
   "payload_api_request",
   "payload_api_find",
@@ -52,6 +57,7 @@ const SITE_BOUND_TOOLS = new Set([
   "payload_landing_block_remove",
   "payload_landing_block_move",
   "payload_landing_set_status",
+  ...COLLECTION_TOOL_NAMES,
 ]);
 
 const MCP_META_NOTE = "Response always includes `_mcp` with resolved { env, site }.";
@@ -61,6 +67,221 @@ function getReturnsWithMeta(doc: ToolDoc) {
   if (doc.returns.includes("_mcp")) return doc.returns;
   return `${doc.returns} ${MCP_META_NOTE}`;
 }
+
+function buildCollectionToolDocs(): Record<string, ToolDoc> {
+  const docs: Record<string, ToolDoc> = {};
+  const siteParams: ToolParam[] = [
+    { name: "headers", type: "object", description: "Extra headers." },
+    { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
+    { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
+  ];
+  const localeParam: ToolParam = {
+    name: "locale",
+    type: "enum(ru|en)",
+    description: "Locale (default ru).",
+    default: "ru",
+  };
+
+  for (const collection of COLLECTIONS) {
+    if (collection.skip) continue;
+    const segment = collection.toolSegment;
+
+    const listName = `payload_${segment}_list`;
+    const getName = `payload_${segment}_get`;
+    const createName = `payload_${segment}_create`;
+    const updateName = `payload_${segment}_update`;
+    const deleteName = `payload_${segment}_delete`;
+    const setStatusName = `payload_${segment}_set_status`;
+
+    const statusParams = collection.hasDrafts
+      ? [{ name: "status", type: "enum(draft|published)", description: "Status filter." }]
+      : [];
+    const draftParams = collection.hasDrafts
+      ? [{ name: "draft", type: "boolean", description: "Include drafts (Payload versions)." }]
+      : [];
+    const uploadNote = collection.hasUpload
+      ? ["For uploads, use payload_api_upload to create files."]
+      : [];
+
+    const listParams: ToolParam[] = [
+      { name: "where", type: "object", description: "Payload where filter object." },
+      { name: "limit", type: "number", description: "Max results (1-100)." },
+      { name: "page", type: "number", description: "Pagination page." },
+      { name: "sort", type: "string", description: "Sort string (e.g. -updatedAt)." },
+      ...statusParams,
+      localeParam,
+      ...draftParams,
+      ...siteParams,
+    ];
+
+    docs[listName] = {
+      name: listName,
+      summary: `List ${collection.slug} documents.`,
+      description: `Lists documents from the ${collection.slug} collection with optional filters.`,
+      category: "collection",
+      readOnly: true,
+      destructive: false,
+      parameters: listParams,
+      returns: "JSON with status, ok, and data.",
+      examples: [
+        {
+          title: `List ${collection.slug}`,
+          input: collection.hasDrafts ? { status: "published", limit: 5 } : { limit: 5 },
+        },
+      ],
+      bestPractices: [
+        "Use small limits.",
+        "Use status filter to control draft visibility when supported.",
+        ...uploadNote,
+      ],
+      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+    };
+
+    const getParams: ToolParam[] = [];
+    if (collection.hasSlugField) {
+      getParams.push({ name: "id", type: "string", description: "Document id." });
+      getParams.push({ name: "slug", type: "string", description: "Document slug." });
+    } else {
+      getParams.push({ name: "id", type: "string", required: true, description: "Document id." });
+    }
+    getParams.push(...statusParams);
+    getParams.push(localeParam);
+    getParams.push(...draftParams);
+    getParams.push(...siteParams);
+
+    docs[getName] = {
+      name: getName,
+      summary: `Get a ${collection.slug} document.`,
+      description: `Fetches a ${collection.slug} document by id${
+        collection.hasSlugField ? " or slug" : ""
+      }.`,
+      category: "collection",
+      readOnly: true,
+      destructive: false,
+      parameters: getParams,
+      returns: "Document JSON.",
+      examples: [
+        {
+          title: `Get ${collection.slug}`,
+          input: collection.hasSlugField ? { slug: "example" } : { id: "123" },
+        },
+      ],
+      bestPractices: ["Prefer id for stable lookups.", ...uploadNote],
+      pitfalls: [
+        ...(collection.hasSlugField ? ["Either id or slug is required."] : []),
+        "Prod gated by site+env and allowlist in restricted mode.",
+      ],
+    };
+
+    if (!collection.hasUpload) {
+      const createStatusParams = collection.hasDrafts
+        ? [{ name: "status", type: "enum(draft|published)", description: "Status hint (sets draft flag)." }]
+        : [];
+      docs[createName] = {
+        name: createName,
+        summary: `Create a ${collection.slug} document.`,
+        description: `Creates a document in the ${collection.slug} collection.`,
+        category: "collection",
+        readOnly: false,
+        destructive: true,
+        parameters: [
+          { name: "data", type: "object", required: true, description: "Document payload." },
+          ...createStatusParams,
+          localeParam,
+          ...draftParams,
+          ...siteParams,
+        ],
+        returns: "JSON with status, ok, and data.",
+        examples: [{ title: `Create ${collection.slug}`, input: { data: {} } }],
+        bestPractices: ["Use dev by default; keep payloads minimal."],
+        pitfalls: [
+          ...(collection.hasDrafts ? ["Provide either status or draft (not both)."] : []),
+          "Prod gated by site+env and allowlist in restricted mode.",
+        ],
+      };
+    }
+
+    docs[updateName] = {
+      name: updateName,
+      summary: `Update a ${collection.slug} document.`,
+      description: `Updates a ${collection.slug} document by id with partial data.`,
+      category: "collection",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        { name: "id", type: "string", required: true, description: "Document id." },
+        { name: "data", type: "object", required: true, description: "Partial update payload." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON with status, ok, and data.",
+      examples: [{ title: `Update ${collection.slug}`, input: { id: "123", data: {} } }],
+      bestPractices: ["Patch only changed fields; keep payloads small."],
+      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+    };
+
+    docs[deleteName] = {
+      name: deleteName,
+      summary: `Delete a ${collection.slug} document.`,
+      description: `Deletes a ${collection.slug} document by id.`,
+      category: "collection",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        { name: "id", type: "string", required: true, description: "Document id." },
+        localeParam,
+        ...siteParams,
+      ],
+      returns: "JSON with status, ok, and data.",
+      examples: [{ title: `Delete ${collection.slug}`, input: { id: "123" } }],
+      bestPractices: ["Confirm id before delete."],
+      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+    };
+
+    if (collection.hasDrafts) {
+      const statusParamsForSet: ToolParam[] = [
+        { name: "status", type: "enum(draft|published)", required: true, description: "Target status." },
+      ];
+      const setParams: ToolParam[] = [];
+      if (collection.hasSlugField) {
+        setParams.push({ name: "id", type: "string", description: "Document id." });
+        setParams.push({ name: "slug", type: "string", description: "Document slug." });
+      } else {
+        setParams.push({ name: "id", type: "string", required: true, description: "Document id." });
+      }
+      setParams.push(...statusParamsForSet);
+      setParams.push(localeParam);
+      setParams.push(...siteParams);
+
+      docs[setStatusName] = {
+        name: setStatusName,
+        summary: `Set ${collection.slug} status.`,
+        description: `Sets ${collection.slug} status to draft or published.`,
+        category: "collection",
+        readOnly: false,
+        destructive: true,
+        parameters: setParams,
+        returns: "JSON with status, ok, and data.",
+        examples: [
+          {
+            title: `Publish ${collection.slug}`,
+            input: collection.hasSlugField ? { slug: "example", status: "published" } : { id: "123", status: "published" },
+          },
+        ],
+        bestPractices: ["Use draft for iterative edits; publish when ready."],
+        pitfalls: [
+          ...(collection.hasSlugField ? ["Either id or slug is required."] : []),
+          "Prod gated by site+env and allowlist in restricted mode.",
+        ],
+      };
+    }
+  }
+
+  return docs;
+}
+
+const COLLECTION_TOOL_DOCS = buildCollectionToolDocs();
 
 const TOOL_DOCS: Record<string, ToolDoc> = {
   payload_echo: {
@@ -789,6 +1010,8 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
   },
 };
 
+Object.assign(TOOL_DOCS, COLLECTION_TOOL_DOCS);
+
 const TOOL_ORDER = Object.keys(TOOL_DOCS);
 
 function renderOverviewMarkdown(depth: "essentials" | "full") {
@@ -797,7 +1020,7 @@ function renderOverviewMarkdown(depth: "essentials" | "full") {
   lines.push("");
   lines.push("## Overview");
   lines.push(
-    "This MCP server provides Payload CMS tooling, landing schema helpers, and Payload API bridge tools. Use `payload_tools_documentation` to discover tools and get per-tool details."
+    "This MCP server provides Payload CMS tooling, landing schema helpers, collection CRUD tools, and Payload API bridge tools. Use `payload_tools_documentation` to discover tools and get per-tool details."
   );
   lines.push("");
   lines.push("## Tool Index");
@@ -812,6 +1035,7 @@ function renderOverviewMarkdown(depth: "essentials" | "full") {
   lines.push("## Best Practices");
   lines.push("- Use dev by default; prod requires explicit `site` + `env`.");
   lines.push("- Site-bound tools include `_mcp` in responses with resolved env/site.");
+  lines.push("- Prefer collection tools (payload_<collection>_*) for collection CRUD.");
   lines.push("- Prefer specific tools (payload_api_find/update/...) over payload_api_request.");
   lines.push("- Keep payloads small (<1.5MB) and validate content before writes.");
   lines.push("- Treat destructive tools as high-risk, especially in prod.");

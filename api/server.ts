@@ -15,6 +15,7 @@ import {
 } from "../lib/payload";
 import { registerLandingTools } from "../lib/payload/landing-tools";
 import { registerApiTools } from "../lib/payload/api-tools";
+import { registerCollectionTools } from "../lib/payload/collection-tools";
 import { getPayloadcmsToolsDocumentation, getPayloadcmsToolAnnotations } from "../lib/payload/tools-documentation";
 import { ensureRedisConnection } from '../lib/redis-connection';
 
@@ -390,6 +391,11 @@ const handler = initializeMcpApiHandler(
     // Landing GitOps tools (schemas/generation/validation)
     registerLandingTools(server).catch((err) => {
       console.error("Failed to register landing tools", err);
+    });
+
+    // Collection CRUD tools generated from web-core schemas
+    registerCollectionTools(server).catch((err) => {
+      console.error("Failed to register collection tools", err);
     });
 
     // Ensure tools/list exposes readOnly/destructive hints for clients.

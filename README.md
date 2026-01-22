@@ -360,6 +360,21 @@ Payload API tools require:
 Limits:
 - JSON bodies and uploads are limited to ~1.5MB.
 
+### 1.2 Collection CRUD tools (auto-generated)
+
+This server exposes per-collection CRUD tools generated from `web-core/apps/synestra-io` collections.
+
+- Tool naming: `payload_<collection>_<action>` where action is `list|get|create|update|delete|set_status`.
+- Collections with drafts get `set_status` and draft-aware list/get behavior.
+- Upload collections (e.g., `media`) do **not** get `create`; use `payload_api_upload` instead.
+- `landing` is excluded in favor of the specialized landing tools.
+
+Regenerate when collections change:
+
+```
+pnpm generate:collection-tools
+```
+
 ### 2. Configure Cursor
 
 To use with Cursor IDE:

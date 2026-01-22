@@ -48,8 +48,8 @@ function buildAuthHeaders() {
   return headers;
 }
 
-const DEV_SITE = "dev.synestra.io";
-const PROD_SITE = "synestra.io";
+export const DEV_SITE = "dev.synestra.io";
+export const PROD_SITE = "synestra.io";
 const PROD_ACCESS_MODE = (process.env.PAYLOAD_PROD_ACCESS_MODE || "restricted").toLowerCase();
 const LANDING_COLLECTION = "landing";
 const DEFAULT_SECTIONS_FIELD = "sections";
@@ -92,7 +92,7 @@ function parseAllowlist(raw?: string): Set<string> {
 
 const PROD_ALLOWLIST = parseAllowlist(process.env.PAYLOAD_PROD_ALLOWLIST);
 
-function isProdAllowed(key: string): boolean {
+export function isProdAllowed(key: string): boolean {
   if (PROD_ACCESS_MODE === "unrestricted") return true;
   return PROD_ALLOWLIST.has(key.toLowerCase());
 }
@@ -116,7 +116,7 @@ function appendWhereParams(params: URLSearchParams, value: any, path: string) {
   params.set(path, String(value));
 }
 
-function buildQueryString(query?: Record<string, any>, draft?: boolean): string {
+export function buildQueryString(query?: Record<string, any>, draft?: boolean): string {
   const params = new URLSearchParams();
   if (query && Object.keys(query).length) {
     if (query.where !== undefined) {
@@ -144,7 +144,7 @@ function buildQueryString(query?: Record<string, any>, draft?: boolean): string 
   return qs ? `?${qs}` : "";
 }
 
-function buildLocaleDraftQuery(locale?: string, draft?: boolean): string {
+export function buildLocaleDraftQuery(locale?: string, draft?: boolean): string {
   const params = new URLSearchParams();
   if (locale) params.set("locale", locale);
   if (draft !== undefined) params.set("draft", String(draft));
@@ -237,7 +237,7 @@ function findHeroBlock(sections: any[], blockType?: string) {
   return idx >= 0 ? { index: idx, block: sections[idx] } : undefined;
 }
 
-function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
+export function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
   const siteVal = (site || DEV_SITE).toLowerCase();
   const envVal = (env || "dev").toLowerCase();
   if (siteVal === PROD_SITE && envVal === "prod") {
@@ -246,7 +246,7 @@ function resolveTarget(site?: string, env?: string): { env: "dev" | "prod" } {
   return { env: "dev" };
 }
 
-function buildMcpMeta(targetEnv: "dev" | "prod") {
+export function buildMcpMeta(targetEnv: "dev" | "prod") {
   return {
     env: targetEnv,
     site: targetEnv === "prod" ? PROD_SITE : DEV_SITE,
@@ -354,7 +354,7 @@ function ensureUrl(path: string, env?: string): URL {
   return url;
 }
 
-async function doFetch(opts: {
+export async function doFetch(opts: {
   method: string;
   path: string;
   body?: any;
