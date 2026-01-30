@@ -1,47 +1,47 @@
-# 🚀 Payload CMS 3.0 MCP Server
+# 🚀 MCP‑сервер для Payload CMS 3.0
 
 <div align="center">
   <p align="center">
-    <img src="https://www.payloadcmsmcp.info/logopayload.png" alt="Payload CMS Logo" width="120" height="120" style="border-radius: 10px; padding: 5px; background-color: white; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);" />
+    <img src="https://www.payloadcmsmcp.info/logopayload.png" alt="Логотип Payload CMS" width="120" height="120" style="border-radius: 10px; padding: 5px; background-color: white; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);" />
   </p>
 <p align="center">
-    <img src="https://img.shields.io/badge/Model%20Context%20Protocol-Enabled-6366F1?style=for-the-badge" alt="MCP Enabled" />
+    <img src="https://img.shields.io/badge/Model%20Context%20Protocol-Enabled-6366F1?style=for-the-badge" alt="MCP включён" />
     <img src="https://img.shields.io/badge/Payload%20CMS%203.0-Integration-3B82F6?style=for-the-badge" alt="Payload CMS" />
-    <img src="https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge" alt="License" />
-    <img src="https://img.shields.io/badge/Railway-Deployment-0B0D0E?style=for-the-badge" alt="Railway Deployment" />
+    <img src="https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge" alt="Лицензия" />
+    <img src="https://img.shields.io/badge/Railway-Deployment-0B0D0E?style=for-the-badge" alt="Деплой на Railway" />
   </p>
   
-  <h3>A specialized MCP server for Payload CMS 3.0</h3>
-  <p>Validate code, generate templates, and scaffold projects following best practices</p>
+  <h3>Специализированный MCP‑сервер для Payload CMS 3.0</h3>
+  <p>Валидация кода, генерация шаблонов и создание каркаса проектов по лучшим практикам</p>
 </div>
 
 <hr>
 
-## 📋 Overview
+## 📋 Обзор
 
-The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server designed to enhance your Payload CMS development experience. It helps developers build better Payload CMS applications by providing code validation, template generation, and project scaffolding capabilities that follow best practices.
+MCP‑сервер для Payload CMS 3.0 — специализированный сервер Model Context Protocol, созданный для улучшения разработки на Payload CMS. Он помогает разработчикам делать приложения лучше за счёт валидации кода, генерации шаблонов и создания структуры проекта в соответствии с лучшими практиками.
 
 <hr>
 
-## ✨ Features
+## ✨ Возможности
 
 <div align="center">
   <table>
     <tr>
       <td align="center">
         <h3>📚</h3>
-        <b>Code Validation</b>
-        <p>Validate Payload CMS code for collections, fields, globals, and config files with detailed feedback on syntax errors and best practices.</p>
+        <b>Валидация кода</b>
+        <p>Проверка кода Payload CMS для коллекций, полей, глобальных сущностей и конфиг‑файлов с подробной обратной связью по ошибкам синтаксиса и best practices.</p>
       </td>
       <td align="center">
         <h3>🔍</h3>
-        <b>Code Generation</b>
-        <p>Generate code templates for collections, fields, globals, access control, hooks, endpoints, plugins, blocks, and migrations.</p>
+        <b>Генерация кода</b>
+        <p>Генерация шаблонов для коллекций, полей, глобальных сущностей, access control, хуков, эндпоинтов, плагинов, блоков и миграций.</p>
       </td>
       <td align="center">
         <h3>🚀</h3>
-        <b>Project Scaffolding</b>
-        <p>Scaffold entire Payload CMS projects with validated options for consistency and adherence to best practices.</p>
+        <b>Скаффолдинг проекта</b>
+        <p>Создание полного каркаса проектов Payload CMS с проверенными опциями для консистентности и соответствия лучшим практикам.</p>
       </td>
     </tr>
   </table>
@@ -49,43 +49,43 @@ The Payload CMS 3.0 MCP Server is a specialized Model Context Protocol server de
 
 <hr>
 
-## 🔧 Payload CMS 3.0 Capabilities
+## 🔧 Возможности Payload CMS 3.0
 
-### Validation Tools
+### Инструменты валидации
 
-* `payload_validation_validate` - Validate code for collections, fields, globals, and config
-* `payload_validation_query` - Search a small built-in rule set (not a full best-practices DB)
-* `payload_validation_mcp_query` - Execute SQL-like queries against the built-in `validation_rules` table
+* `payload_validation_validate` — валидация кода коллекций, полей, глобальных сущностей и конфигурации
+* `payload_validation_query` — поиск по небольшому встроенному набору правил (не полная база best practices)
+* `payload_validation_mcp_query` — SQL‑подобные запросы к встроенной таблице `validation_rules`
 
-### Code Generation
+### Генерация кода
 
-* `payload_template_generate` - Generate code templates for various components
-* `payload_collection_generate` - Create complete collection definitions
-* `payload_field_generate` - Generate field definitions with proper typing
+* `payload_template_generate` — генерация шаблонов для различных компонентов
+* `payload_collection_generate` — создание полной конфигурации коллекции
+* `payload_field_generate` — генерация определения поля с корректной типизацией
 
-### Project Setup
+### Настройка проекта
 
-* `payload_scaffold_project_generate` - Create entire Payload CMS project structures
-* `validate_scaffold_options` - Internal validator used by `payload_scaffold_project_generate` (not exposed as a tool)
+* `payload_scaffold_project_generate` — создание структуры проекта Payload CMS
+* `validate_scaffold_options` — внутренний валидатор для `payload_scaffold_project_generate` (не доступен как инструмент)
 
 <hr>
 
-## 📝 Detailed Tool Reference
+## 📝 Подробный справочник по инструментам
 
-### Validation Tools
+### Инструменты валидации
 
 #### `payload_validation_validate`
-Validates Payload CMS code for syntax and best practices.
+Проверяет код Payload CMS на синтаксис и best practices.
 
-**Parameters:**
-- `code` (string): The code to validate
-- `fileType` (enum): Type of file - "collection", "field", "global", or "config"
+**Параметры:**
+- `code` (string): код для проверки
+- `fileType` (enum): тип файла — "collection", "field", "global" или "config"
 
-**Important:**
-- `payload_validation_validate` uses `eval` on the provided string. **Do not** pass untrusted input.
-- The input must be a **plain JS object literal**. `import`/`export` statements will fail.
+**Важно:**
+- `payload_validation_validate` использует `eval` для переданной строки. **Не** передавайте непроверенный ввод.
+- Вход должен быть **чистым JS‑литералом объекта**. `import`/`export` не поддерживаются.
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Can you validate this Payload CMS collection code?
 
@@ -110,24 +110,24 @@ Can you validate this Payload CMS collection code?
 ```
 
 #### `payload_validation_query`
-Searches a small **built-in** rule set (heuristics). Not a comprehensive best-practices database.
+Ищет по небольшому **встроенному** набору правил (эвристики). Это не полная база best practices.
 
-**Parameters:**
-- `query` (string): The query string
-- `fileType` (optional enum): Type of file - "collection", "field", "global", or "config"
+**Параметры:**
+- `query` (string): строка запроса
+- `fileType` (optional enum): тип файла — "collection", "field", "global" или "config"
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Find rules related to access control for collections.
 ```
 
 #### `payload_validation_mcp_query`
-Executes SQL-like queries against the **built-in** `validation_rules` table.
+Выполняет SQL‑подобные запросы к **встроенной** таблице `validation_rules`.
 
-**Parameters:**
-- `sql` (string): SQL-like query string
+**Параметры:**
+- `sql` (string): строка SQL‑подобного запроса
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Can you list security rules?
 SELECT id, category, description FROM validation_rules WHERE category = 'security' LIMIT 5
@@ -136,279 +136,279 @@ Describe the available columns:
 DESCRIBE validation_rules
 ```
 
-### Code Generation
+### Генерация кода
 
 #### `payload_template_generate`
-Generates code templates for various Payload CMS components.
+Генерирует шаблоны кода для различных компонентов Payload CMS.
 
-**Parameters:**
-- `templateType` (enum): Type of template - "collection", "field", "global", "config", "access-control", "hook", "endpoint", "plugin", "block", "migration"
-- `options` (record): Configuration options for the template
+**Параметры:**
+- `templateType` (enum): тип шаблона — "collection", "field", "global", "config", "access-control", "hook", "endpoint", "plugin", "block", "migration"
+- `options` (record): опции конфигурации шаблона
 
-**Notes:**
-- Generated code currently uses `import ... from 'payload/types'` (Payload v2 style). For Payload 3, update to `import type { ... } from 'payload'`.
-- Some templates are intentionally generic and require manual refinement.
+**Примечания:**
+- Сейчас код использует `import ... from 'payload/types'` (стиль Payload v2). Для Payload 3 нужно заменить на `import type { ... } from 'payload'`.
+- Некоторые шаблоны намеренно универсальные и требуют ручной доработки.
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Generate a template for a Payload CMS hook that logs when a document is created.
 ```
 
 #### `payload_collection_generate`
-Generates a complete Payload CMS collection definition.
+Генерирует полную конфигурацию коллекции Payload CMS.
 
-**Parameters:**
-- `slug` (string): Collection slug
-- `fields` (optional array): Array of field objects
-- `auth` (optional boolean): Whether this is an auth collection
-- `timestamps` (optional boolean): Whether to include timestamps
-- `admin` (optional object): Admin panel configuration
-- `hooks` (optional boolean): Whether to include hooks
-- `access` (optional boolean): Whether to include access control
-- `versions` (optional boolean): Whether to enable versioning
+**Параметры:**
+- `slug` (string): slug коллекции
+- `fields` (optional array): массив объектов полей
+- `auth` (optional boolean): является ли коллекция auth‑коллекцией
+- `timestamps` (optional boolean): добавлять ли временные метки
+- `admin` (optional object): настройки админ‑панели
+- `hooks` (optional boolean): включать ли хуки
+- `access` (optional boolean): включать ли access control
+- `versions` (optional boolean): включать ли версионирование
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Generate a Payload CMS collection for a blog with title, content, author, and published date fields. Include timestamps and versioning.
 ```
 
-**Notes:**
-- The output is a starting point. You will usually need to add access control, admin labels, and Payload 3 import paths.
+**Примечания:**
+- Вывод — стартовая точка. Обычно нужно добавить access control, admin‑labels и пути импорта Payload 3.
 
 #### `payload_field_generate`
-Generates a Payload CMS field definition.
+Генерирует определение поля Payload CMS.
 
-**Parameters:**
-- `name` (string): Field name
-- `type` (string): Field type
-- `required` (optional boolean): Whether the field is required
-- `unique` (optional boolean): Whether the field should be unique
-- `localized` (optional boolean): Whether the field should be localized
-- `access` (optional boolean): Whether to include access control
-- `admin` (optional object): Admin panel configuration
-- `validation` (optional boolean): Whether to include validation
-- `defaultValue` (optional any): Default value for the field
+**Параметры:**
+- `name` (string): имя поля
+- `type` (string): тип поля
+- `required` (optional boolean): обязательность
+- `unique` (optional boolean): уникальность
+- `localized` (optional boolean): локализация
+- `access` (optional boolean): включить access control
+- `admin` (optional object): настройки админ‑панели
+- `validation` (optional boolean): включить валидацию
+- `defaultValue` (optional any): значение по умолчанию
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Generate a Payload CMS image field with validation that requires alt text and has a description in the admin panel.
 ```
 
-**Notes:**
-- Text-like fields get default `minLength`/`maxLength`.
-- `upload` fields will still require `relationTo` to match your project.
+**Примечания:**
+- Для текстовых полей добавляются `minLength`/`maxLength` по умолчанию.
+- Для `upload` полей всё равно нужен `relationTo`, соответствующий вашему проекту.
 
-### Project Setup
+### Настройка проекта
 
 #### `payload_scaffold_project_generate`
-Scaffolds a complete Payload CMS project structure.
+Создаёт полную структуру проекта Payload CMS.
 
-**Parameters:**
-- `projectName` (string): Name of the project
-- `description` (optional string): Project description
-- `serverUrl` (optional string): Server URL
-- `database` (optional enum): Database type - "mongodb" or "postgres"
-- `auth` (optional boolean): Whether to include authentication
-- `admin` (optional object): Admin panel configuration
-- `collections` (optional array): Array of collection objects
-- `globals` (optional array): Array of global objects
-- `blocks` (optional array): Array of block objects
-- `plugins` (optional array): Array of plugin strings
-- `typescript` (optional boolean): Whether to use TypeScript
+**Параметры:**
+- `projectName` (string): имя проекта
+- `description` (optional string): описание проекта
+- `serverUrl` (optional string): URL сервера
+- `database` (optional enum): тип базы данных — "mongodb" или "postgres"
+- `auth` (optional boolean): включать ли аутентификацию
+- `admin` (optional object): настройки админ‑панели
+- `collections` (optional array): массив коллекций
+- `globals` (optional array): массив глобальных сущностей
+- `blocks` (optional array): массив блоков
+- `plugins` (optional array): массив плагинов
+- `typescript` (optional boolean): использовать ли TypeScript
 
-**Example Prompt:**
+**Пример запроса:**
 ```
 Scaffold a Payload CMS project called "blog-platform" with MongoDB, authentication, and collections for posts, categories, and users. Include a global for site settings.
 ```
 
-**Notes:**
-- Returns a **JSON description** of files, not actual files.
-- Options are validated internally; invalid inputs will return an error response.
+**Примечания:**
+- Возвращает **JSON‑описание** файлов, а не реальные файлы.
+- Опции валидируются; неверные значения дают ошибку.
 
-### Landing GitOps (new)
+### Landing GitOps (новое)
 
 #### `payload_tools_documentation`
-Returns documentation for all payloadcmsmcp tools (overview or per-tool). Similar to `n8n_tools_documentation`.
+Возвращает документацию по всем инструментам payloadcmsmcp (обзор или по инструменту). Аналог `n8n_tools_documentation`.
 
-**Parameters:**
-- `topic` (optional string): tool name or `overview` (default).
-- `depth` (optional enum): `essentials` | `full` (default essentials).
-- `format` (optional enum): `json` | `markdown` (default markdown).
+**Параметры:**
+- `topic` (optional string): имя инструмента или `overview` (по умолчанию).
+- `depth` (optional enum): `essentials` | `full` (по умолчанию essentials).
+- `format` (optional enum): `json` | `markdown` (по умолчанию markdown).
 
 #### `payload_landing_generate`
-Generate JSON for a landing block that matches the built-in landing schemas.
-Supported `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carousel`, `archive`, `threeItemGrid`, `formBlock`, `code`.
+Генерирует JSON для landing‑блока, соответствующего встроенным схемам.
+Поддерживаемые `blockType`: `content`, `callToAction`, `mediaBlock`, `banner`, `carousel`, `archive`, `threeItemGrid`, `formBlock`, `code`.
 
-**Parameters:**
-- `blockType` (string): Block slug.
-- `preset` (optional enum): "minimal" | "full" (default full).
-- `locale` (optional enum): "en" | "ru" (affects sample text only).
+**Параметры:**
+- `blockType` (string): slug блока.
+- `preset` (optional enum): "minimal" | "full" (по умолчанию full).
+- `locale` (optional enum): "en" | "ru" (влияет только на примерный текст).
 
 #### `payload_landing_validate`
-Validate a landing document against schemas. Accepts a single block or `{ "sections": [...] }`.
-Input is a **JSON string**. In `mode: "loose"`, non-JSON input is skipped.
+Проверяет landing‑документ по схемам. Принимает одиночный блок или `{ "sections": [...] }`.
+Вход — **строка JSON**. В `mode: "loose"` не‑JSON пропускается.
 
-**Parameters:**
-- `document` (string): JSON string.
-- `mode` (optional enum): "strict" | "loose" (loose skips non-JSON).
+**Параметры:**
+- `document` (string): строка JSON.
+- `mode` (optional enum): "strict" | "loose" (loose пропускает не‑JSON).
 
 #### `payload_landing_schema_list`
-Lists available landing block schemas.
+Список доступных схем landing‑блоков.
 
 #### `payload_landing_schema_get`
-Returns full JSON Schema for a given `blockType`.
+Возвращает полную JSON‑схему для `blockType`.
 
 #### `payload_landing_documentation`
-Returns summary or detailed help for landing tools.
+Краткая или подробная справка по инструментам landing.
 
-### Payload API Bridge (new)
+### Payload API Bridge (новое)
 
-**Responses:** all site-bound tools include `_mcp` with resolved `{ env, site }`.
+**Ответы:** все site‑bound инструменты включают `_mcp` с `{ env, site }`.
 
 #### `payload_api_request`
-Raw HTTP call to Payload API (base from `PAYLOAD_API_URL_DEV`/`PAYLOAD_API_URL_PROD`). Params: `method`, `path` (must start with `/`), optional `body`, `headers`, optional `site` (`dev.synestra.io` default / `synestra.io`), optional `env` (`dev` default / `prod`). **Prod requires both** `site: "synestra.io"` and `env: "prod"`, plus allowlist unless `PAYLOAD_PROD_ACCESS_MODE=unrestricted`.
-Auth by default: `PAYLOAD_API_SECRET` (Bearer) or `PAYLOAD_API_USER/PASS` (Basic).
-If your API expects a different auth scheme (e.g. `users API-Key <token>`), pass a custom `Authorization` header via `headers`.
+Сырый HTTP‑вызов к Payload API (base из `PAYLOAD_API_URL_DEV`/`PAYLOAD_API_URL_PROD`). Параметры: `method`, `path` (должен начинаться с `/`), optional `body`, `headers`, optional `site` (`dev.synestra.io` по умолчанию / `synestra.io`), optional `env` (`dev` по умолчанию / `prod`). Для prod **нужно и** `site: "synestra.io"`, и `env: "prod"`, плюс allowlist если `PAYLOAD_PROD_ACCESS_MODE=unrestricted` не задан.
+Auth по умолчанию: `PAYLOAD_API_SECRET` (Bearer) или `PAYLOAD_API_USER/PASS` (Basic).
+Если API требует иную схему (например, `users API-Key <token>`), передайте кастомный `Authorization` через `headers`.
 
-**Auth scheme overrides (optional):**
-- `PAYLOAD_API_AUTH_SCHEME` = `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
-- `PAYLOAD_API_KEY_PREFIX` (default: `users API-Key`)
-- `PAYLOAD_API_AUTH_HEADER_NAME` (default: `Authorization`)
+**Переопределения схемы авторизации (optional):**
+- `PAYLOAD_API_AUTH_SCHEME` = `auto` (по умолчанию), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
+- `PAYLOAD_API_KEY_PREFIX` (по умолчанию: `users API-Key`)
+- `PAYLOAD_API_AUTH_HEADER_NAME` (по умолчанию: `Authorization`)
 
 #### `payload_api_find` / `payload_api_create` / `payload_api_update` / `payload_api_delete`
-Convenience CRUD helpers for collections with optional `locale`.
+Упрощённые CRUD‑хелперы для коллекций с optional `locale`.
 
 #### `payload_api_upload`
-Upload a small file via multipart; params: `filename`, `mime`, `base64`, optional `relationTo` (default `media`).
+Загрузка небольшого файла через multipart; параметры: `filename`, `mime`, `base64`, optional `relationTo` (по умолчанию `media`).
 
 #### `payload_api_docs`
-Cheat-sheet of common endpoints and tips (auth, collections, uploads, locale).
+Шпаргалка по общим эндпоинтам и подсказкам (auth, коллекции, uploads, locale).
 
-### Landing Editor Tools (new)
+### Landing Editor Tools (новое)
 
-These tools operate **only** on the `landing` collection and are designed for editor-friendly workflows.
+Эти инструменты работают **только** с коллекцией `landing` и ориентированы на удобную работу редактора.
 
 #### `payload_landing_list`
-List landing documents with filters (status/locale/pagination). If `status=draft`, the server forces `draft=true` (including when `where` uses `_status=draft`).
+Список landing‑документов с фильтрами (status/locale/пагинация). Если `status=draft`, сервер принудительно выставляет `draft=true` (включая случаи, когда `where` содержит `_status=draft`).
 
 #### `payload_landing_get`
-Get a landing by `id` or `slug`. Optional `status` parameter; `status=draft` forces `draft=true`.
+Получить landing по `id` или `slug`. Опционально `status`; при `status=draft` используется `draft=true`.
 
 #### `payload_landing_hero_get`
-Get hero-related top-level fields and optional hero block.
+Получить hero‑поля верхнего уровня и опциональный hero‑блок.
 
 #### `payload_landing_blocks_list`
-List blocks with indexes and summaries to target specific sections. Optional `status` parameter; `status=draft` forces `draft=true`.
+Список блоков с индексами и краткими описаниями для точечного редактирования. Опциональный `status`; при `status=draft` используется `draft=true`.
 
 #### `payload_landing_block_get`
-Get a single block by index or blockId.
+Получить один блок по индексу или blockId.
 
 #### `payload_landing_create` / `payload_landing_update`
-Create or update top-level fields of a landing. `payload_landing_update` defaults to **safe** mode (arrays merged by `id/_id`). To use legacy shallow updates, set `mode: "merge"` and `allowUnsafe: true`.
+Создать или обновить поля верхнего уровня. `payload_landing_update` по умолчанию в **safe**‑режиме (массивы мержатся по `id/_id`). Чтобы использовать legacy shallow update, задайте `mode: "merge"` и `allowUnsafe: true`.
 
 #### `payload_landing_block_add` / `payload_landing_block_update` / `payload_landing_block_remove` / `payload_landing_block_move`
-Add/update/remove/reorder blocks in `sections`. `payload_landing_block_update` defaults to **safe** mode: deep merge with array items merged by `id/_id` (prevents accidental deletion). To use legacy shallow merge or full replace, set `mode: "merge"|"replace"` **and** `allowUnsafe: true`.
+Добавить/обновить/удалить/переупорядочить блоки в `sections`. `payload_landing_block_update` по умолчанию в **safe**‑режиме: глубокий merge, элементы массивов по `id/_id` (предотвращает случайные удаления). Для legacy shallow merge или полной замены задайте `mode: "merge"|"replace"` **и** `allowUnsafe: true`.
 
 #### `payload_landing_set_status`
-Publish/unpublish (draft/published) using the Payload draft workflow.
+Публикация/снятие с публикации (draft/published) через механизм черновиков Payload.
 
-## ⚠️ Known Limitations & Gotchas
+## ⚠️ Известные ограничения и подводные камни
 
-- **Validation uses `eval`**: only pass trusted input and **plain object literals** (no `import`/`export`).
-- **Rule base is small**: `payload_validation_query`/`payload_validation_mcp_query` search a limited in-repo rule set. Results may be empty.
-- **SQL tables are limited**: only `validation_rules` is supported (`payload_schema` is not).
-- **Payload 3 imports**: generated code uses `payload/types` and may need manual updates to `import type { ... } from 'payload'`.
-- **Blocks default fields**: `payload_template_generate` for blocks adds `image` and `content` by default. Set `imageField: false` / `contentField: false` to disable.
-- **Hooks are generic**: templates use `beforeOperation`/`afterOperation` and may need adjustment to your project conventions.
-- **API auth schemes**: tools support `PAYLOAD_API_AUTH_SCHEME` (`users-api-key`, `bearer`, `basic`, `api-key`, `none`) and custom header name/prefix.
-- **Scaffold output**: `payload_scaffold_project_generate` returns JSON structure, not files on disk.
+- **Валидация использует `eval`**: передавайте только доверенный ввод и **чистые литералы объектов** (без `import`/`export`).
+- **Набор правил небольшой**: `payload_validation_query`/`payload_validation_mcp_query` ищут по ограниченному набору правил. Результаты могут быть пустыми.
+- **SQL‑таблицы ограничены**: поддерживается только `validation_rules` (`payload_schema` не поддерживается).
+- **Импорты Payload 3**: сгенерированный код использует `payload/types` и может потребовать ручной замены на `import type { ... } from 'payload'`.
+- **Поля по умолчанию для блоков**: `payload_template_generate` для блоков добавляет `image` и `content` по умолчанию. Установите `imageField: false` / `contentField: false`, чтобы отключить.
+- **Хуки универсальные**: шаблоны используют `beforeOperation`/`afterOperation` и могут требовать адаптации под ваш проект.
+- **Схемы авторизации API**: поддерживаются `PAYLOAD_API_AUTH_SCHEME` (`users-api-key`, `bearer`, `basic`, `api-key`, `none`) и кастомные заголовки.
+- **Вывод скаффолда**: `payload_scaffold_project_generate` возвращает JSON‑структуру, а не файлы на диске.
 
-## 🔌 Transport & Endpoints
+## 🔌 Транспорт и эндпоинты
 
-- This MCP server uses **SSE transport** with `/sse` and `/message`.
-- Streamable HTTP MCP is **not** served directly; use a bridge (e.g., mcp-sse-bridge) or a gateway to expose `/mcp`.
-- `tools/list` includes MCP `annotations` for safety-aware clients (readOnly/destructive/idempotent/openWorld).
+- MCP‑сервер использует **SSE‑транспорт** с `/sse` и `/message`.
+- Streamable HTTP MCP **не** обслуживается напрямую; используйте мост (например, mcp‑sse‑bridge) или gateway для `/mcp`.
+- `tools/list` включает MCP `annotations` для клиентов с учётом безопасности (readOnly/destructive/idempotent/openWorld).
 
 <hr>
 
-## 🚀 Getting Started
+## 🚀 Начало работы
 
-### 1. Prerequisites
+### 1. Требования
 
-Before you begin, make sure you have:
+Перед началом убедитесь, что у вас есть:
 
-* Node.js 18+ (required for Payload CMS 3.0)
-* An active Railway account
-* A Railway API token (create one at [railway.app/account/tokens](https://railway.app/account/tokens))
-* Basic familiarity with Payload CMS 3.0 concepts
+* Node.js 18+ (обязательно для Payload CMS 3.0)
+* Аккаунт Railway
+* Railway API token (создайте на [railway.app/account/tokens](https://railway.app/account/tokens))
+* Базовые знания Payload CMS 3.0
 
-### 1.1 Required Environment Variables
+### 1.1 Обязательные переменные окружения
 
-The MCP server **requires Redis** for SSE sessions:
-- `REDIS_URL` or `KV_URL` (required)
+MCP‑сервер **требует Redis** для SSE‑сессий:
+- `REDIS_URL` или `KV_URL` (обязательно)
 
-Payload API tools require:
-- `PAYLOAD_API_URL_DEV` (required for payload_api_* tools; default target)
-- `PAYLOAD_API_URL_PROD` (required for payload_api_* tools when `site=synestra.io` and `env=prod`)
-- `PAYLOAD_PROD_ALLOWLIST` (CSV, default empty). Example: `payload_api_find,payload_api_update,payload_api_upload,payload_api_request_get`.
-- `PAYLOAD_PROD_ACCESS_MODE` (default `restricted`). Set to `unrestricted` to bypass allowlist for prod.
-- `PAYLOAD_API_SECRET` **or** `PAYLOAD_API_USER` + `PAYLOAD_API_PASS` (optional, for auth)
-- `PAYLOAD_API_AUTH_SCHEME` (optional): `auto` (default), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
-- `PAYLOAD_API_KEY_PREFIX` (optional, default: `users API-Key`)
-- `PAYLOAD_API_AUTH_HEADER_NAME` (optional, default: `Authorization`)
+Для инструментов Payload API требуются:
+- `PAYLOAD_API_URL_DEV` (обязательно для payload_api_*; цель по умолчанию)
+- `PAYLOAD_API_URL_PROD` (обязательно для payload_api_* при `site=synestra.io` и `env=prod`)
+- `PAYLOAD_PROD_ALLOWLIST` (CSV, по умолчанию пусто). Пример: `payload_api_find,payload_api_update,payload_api_upload,payload_api_request_get`.
+- `PAYLOAD_PROD_ACCESS_MODE` (по умолчанию `restricted`). Установите `unrestricted` чтобы обойти allowlist для prod.
+- `PAYLOAD_API_SECRET` **или** `PAYLOAD_API_USER` + `PAYLOAD_API_PASS` (опционально, для auth)
+- `PAYLOAD_API_AUTH_SCHEME` (опционально): `auto` (по умолчанию), `bearer`, `basic`, `users-api-key`, `api-key`, `none`
+- `PAYLOAD_API_KEY_PREFIX` (опционально, по умолчанию: `users API-Key`)
+- `PAYLOAD_API_AUTH_HEADER_NAME` (опционально, по умолчанию: `Authorization`)
 
-Limits:
-- JSON bodies and uploads are limited to ~1.5MB.
+Ограничения:
+- Тела JSON и загрузки ограничены ~1.5MB.
 
-### 1.2 Collection CRUD tools (auto-generated)
+### 1.2 CRUD‑инструменты коллекций (генерируются автоматически)
 
-This server exposes per-collection CRUD tools generated from `web-core/apps/synestra-io` collections.
+Сервер предоставляет CRUD‑инструменты по коллекциям, сгенерированные из `web-core/apps/synestra-io` collections.
 
-- Tool naming: `payload_<collection>_<action>` where action is `list|get|create|update|delete|set_status`.
-- Collections with drafts get `set_status` and draft-aware list/get behavior.
-- Upload collections (e.g., `media`) do **not** get `create`; use `payload_api_upload` instead.
-- `landing` is excluded in favor of the specialized landing tools.
+- Имена инструментов: `payload_<collection>_<action>`, где action — `list|get|create|update|delete|set_status`.
+- Коллекции с черновиками получают `set_status` и draft‑ориентированное поведение list/get.
+- Коллекции загрузок (например, `media`) **не** получают `create`; используйте `payload_api_upload`.
+- `landing` исключён в пользу специализированных инструментов.
 
-Regenerate when collections change:
+Перегенерируйте при изменении коллекций:
 
 ```
 pnpm generate:collection-tools
 ```
 
-### 2. Configure Cursor
+### 2. Настройка Cursor
 
-To use with Cursor IDE:
+Чтобы использовать в Cursor IDE:
 
-1. Open Cursor Settings
-2. Go to MCP Servers section
-3. Add a new MCP server
-4. Name it "Payload CMS 3.0 MCP"
-5. Set Transport Type to "Command"
-6. Set Command to: `railway run --service=YOUR_SERVICE_ID`
-7. Save the configuration
+1. Откройте настройки Cursor
+2. Перейдите в раздел MCP Servers
+3. Добавьте новый MCP‑сервер
+4. Назовите его "Payload CMS 3.0 MCP"
+5. Тип транспорта — "Command"
+6. Команда: `railway run --service=YOUR_SERVICE_ID`
+7. Сохраните
 
-### 3. Using the MCP Server
+### 3. Использование MCP‑сервера
 
-Once configured, you can use these tools in your AI prompts:
+После настройки можно вызывать инструменты в промптах:
 
-* **Code Validation:** "Validate this Payload CMS collection code"
-* **Template Generation:** "Generate a template for a media collection"
-* **Query Rules:** "Find validation rules about access control"
-* **SQL-like Queries:** "List security rules from validation_rules"
+* **Валидация кода:** "Validate this Payload CMS collection code"
+* **Генерация шаблонов:** "Generate a template for a media collection"
+* **Запрос правил:** "Find validation rules about access control"
+* **SQL‑подобные запросы:** "List security rules from validation_rules"
 
-### 4. Example Workflow
+### 4. Пример рабочего процесса
 
-A typical workflow with the Payload CMS MCP Server:
+Типичный процесс с MCP‑сервером Payload CMS:
 
-1. Generate a collection template with specific fields
-2. Validate the generated code for best practices
-3. Query built-in validation rules to improve the code
-4. Generate additional components like hooks or endpoints
-5. Scaffold a complete project structure when ready
+1. Сгенерировать шаблон коллекции с нужными полями
+2. Провалидировать код по best practices
+3. Запросить встроенные правила для улучшения кода
+4. Сгенерировать дополнительные компоненты (хуки, эндпоинты)
+5. При готовности — скаффолдинг проекта
 
-### 5. Complete Workflow Example
+### 5. Полный пример рабочего процесса
 
-Here's a complete example of how you might use the MCP server in a conversation:
+Полный пример диалога:
 
 ```
 User: I need to create a Payload CMS collection for a product catalog.
@@ -523,11 +523,11 @@ The project is ready to be initialized with `npm install` and `npm run dev`.
 
 <hr>
 
-## 📋 Scaffolding Examples & Detailed Prompts
+## 📋 Примеры скаффолдинга и подробные промпты
 
-### Project Scaffolding Examples
+### Примеры скаффолдинга проектов
 
-When you scaffold a project using the MCP server, you'll receive a complete project structure. Here's what a scaffolded e-commerce project might look like:
+При скаффолдинге проекта MCP‑сервер возвращает полную структуру. Пример для e‑commerce:
 
 ```
 e-commerce-platform/
@@ -569,7 +569,7 @@ e-commerce-platform/
 │       └── sendEmail.ts
 ```
 
-### Example Scaffold Project Prompt (Basic)
+### Пример базового промпта для скаффолдинга
 
 ```
 Scaffold a Payload CMS project for a blog platform with the following:
@@ -581,7 +581,7 @@ Scaffold a Payload CMS project for a blog platform with the following:
 - TypeScript: Yes
 ```
 
-### Example Scaffold Project Prompt (Detailed)
+### Пример подробного промпта для скаффолдинга
 
 ```
 Scaffold a comprehensive Payload CMS project for an e-commerce platform with the following specifications:
@@ -660,13 +660,13 @@ Add hooks for:
 - Sending email notifications on order status changes
 ```
 
-### Example Collection Creation Prompt (Basic)
+### Пример базового промпта для создания коллекции
 
 ```
 Generate a Payload CMS collection for blog posts with title, content, author, and published date fields.
 ```
 
-### Example Collection Creation Prompt (Detailed)
+### Пример подробного промпта для создания коллекции
 
 ```
 Generate a Payload CMS collection for a real estate property listing with the following specifications:
@@ -726,21 +726,21 @@ Versioning: Enabled
 Timestamps: Enabled
 ```
 
-### Level of Detail in Prompts
+### Уровень детализации в промптах
 
-The MCP server can handle prompts with varying levels of detail:
+MCP‑сервер понимает промпты разной детализации:
 
-#### Minimal Detail (AI fills in the gaps)
+#### Минимальная детализация (AI дополняет детали)
 ```
 Generate a collection for blog posts.
 ```
 
-#### Moderate Detail (Specific requirements)
+#### Средняя детализация (конкретные требования)
 ```
 Generate a collection for blog posts with title, content, featured image, categories, and author fields. Make title and content required.
 ```
 
-#### High Detail (Complete specifications)
+#### Максимальная детализация (полные спецификации)
 ```
 Generate a collection for blog posts with:
 - Slug: posts
@@ -762,104 +762,99 @@ Generate a collection for blog posts with:
 - Enable versioning and timestamps
 ```
 
-### Tips for Effective Prompts
+### Советы по эффективным промптам
 
-1. **Be specific about requirements**: The more details you provide, the more tailored the output will be.
-
-2. **Specify relationships**: Clearly indicate how collections relate to each other.
-
-3. **Include validation needs**: Mention any validation rules or constraints for fields.
-
-4. **Describe admin UI preferences**: Specify how you want the collection to appear in the admin panel.
-
-5. **Mention hooks and access control**: If you need specific business logic or security rules, include them in your prompt.
-
-6. **Use domain-specific terminology**: Describe your project using terms relevant to your industry or use case.
+1. **Будьте конкретны в требованиях**: чем больше деталей, тем точнее результат.
+2. **Указывайте связи**: описывайте, как коллекции связаны между собой.
+3. **Добавляйте требования к валидации**: указывайте ограничения для полей.
+4. **Опишите предпочтения для админ‑UI**: как коллекция должна выглядеть в панели.
+5. **Упоминайте хуки и access control**: если нужна бизнес‑логика или безопасность.
+6. **Используйте терминологию домена**: описывайте проект понятиями вашей отрасли.
 
 <hr>
 
-## 📄 License
+## 📄 Лицензия
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Проект распространяется по лицензии MIT — см. файл LICENSE.
 
 <hr>
 
-## 🌍 About MATMAX WORLDWIDE
+## 🌍 О MATMAX WORLDWIDE
 
 <div align="center">
   <h3>MATMAX WORLDWIDE</h3>
-  <p>Creating technology that helps humans be more human.</p>
+  <p>Создаём технологии, которые помогают людям быть более человечными.</p>
 </div>
 
-We believe in tech for good—tools that enhance our lives while respecting our humanity.
+Мы верим в технологии во благо — инструменты, которые улучшают нашу жизнь, уважая нашу человечность.
 
-Join us in building a future where technology serves wellness, connection, and purpose. Together, we can create digital experiences that bring out the best in us all.
+Присоединяйтесь к созданию будущего, где технологии служат благополучию, связи и цели. Вместе мы можем создавать цифровые опыт и продукты, которые помогают людям раскрывать лучшее в себе.
 
-Visit [matmax.world](https://matmax.world) to learn more about our vision for human-centered technology.
+Посетите [matmax.world](https://matmax.world), чтобы узнать больше о нашем видении человекоцентричных технологий.
 
 <hr>
 
-## 🖥️ Running Locally
+## 🖥️ Локальный запуск
 
-You can run the Payload CMS MCP Server locally using npm:
+Вы можете запустить MCP‑сервер Payload CMS локально через npm:
 
 [![npm version](https://img.shields.io/npm/v/payload-cms-mcp.svg?style=flat-square)](https://www.npmjs.org/package/payload-cms-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/payload-cms-mcp.svg?style=flat-square)](https://npmjs.org/package/payload-cms-mcp)
 
-### Option 1: Install from npm
+### Вариант 1: Установка из npm
 
 ```bash
-# Install globally
+# Установить глобально
 npm install -g payload-cms-mcp
 
-# Run the server
+# Запустить сервер
 payload-cms-mcp
 ```
 
-Note: `payload-cms-mcp` serves the static UI from `public/`. The MCP endpoints live under `/api/server.ts` (serverless). To test MCP locally, run in a serverless/dev environment (e.g. Vercel dev) or wire the handler into your own HTTP server to expose `/sse` and `/message`.
+Примечание: `payload-cms-mcp` раздаёт статический UI из `public/`. MCP‑эндпоинты находятся в `/api/server.ts` (serverless). Для локального тестирования MCP запускайте в serverless/dev окружении (например, Vercel dev) или подключите handler в свой HTTP‑сервер, чтобы открыть `/sse` и `/message`.
 
-### Option 2: Clone the repository
+### Вариант 2: Клонировать репозиторий
 
-1. Clone the repository:
+1. Клонируйте репозиторий:
 ```bash
 git clone https://github.com/Matmax-Worldwide/payloadcmsmcp.git
 cd payloadcmsmcp
 ```
 
-2. Install dependencies:
+2. Установите зависимости:
 ```bash
 npm install
 ```
 
-3. Run the server locally:
+3. Запустите локально:
 ```bash
 npm run dev
 ```
 
-Or alternatively:
+Или:
 ```bash
 npm run local
 ```
 
-Your MCP server will now be running locally and accessible for development and testing without requiring a Railway API token.
+Ваш MCP‑сервер будет работать локально и доступен для разработки и тестов без Railway API token.
 
-## 🚀 Deployment Options
+## 🚀 Варианты деплоя
 
-### Deploy to Railway (Recommended)
+### Деплой на Railway (рекомендуется)
 
-The easiest way to deploy the MCP server is using Railway's one-click deployment:
+Самый простой способ — one‑click deploy на Railway:
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
 
-After clicking the button:
-1. Select "Deploy from GitHub repo"
-2. Search for "Matmax-Worldwide/payloadcmsmcp"
-3. Click "Deploy Now"
+После нажатия кнопки:
+1. Выберите "Deploy from GitHub repo"
+2. Найдите "Matmax-Worldwide/payloadcmsmcp"
+3. Нажмите "Deploy Now"
 
-#### Quick Cursor IDE Setup
+#### Быстрая настройка Cursor IDE
 
-After deployment:
-1. Install Railway CLI: `npm install -g @railway/cli`
-2. Login to Railway: `railway login`
-3. Link to your project: `railway link`
-4. In Cursor Settings > MCP Servers, set Command to: `railway run`
+После деплоя:
+1. Установите Railway CLI: `npm install -g @railway/cli`
+2. Логин в Railway: `railway login`
+3. Свяжите проект: `railway link`
+4. В Cursor Settings > MCP Servers задайте Command: `railway run`

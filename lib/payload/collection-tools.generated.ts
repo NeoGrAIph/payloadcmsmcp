@@ -8,21 +8,24 @@ export type CollectionDescriptor = {
   hasDrafts: boolean;
   hasUpload: boolean;
   toolSegment: string;
+  landingCapable?: boolean;
+  sectionsField?: string;
+  schemaDir?: string;
   skip?: boolean;
 };
 
 export const COLLECTIONS: CollectionDescriptor[] = [
-  { slug: "caseStudies", source: "CaseStudies", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "casestudies", skip: true },
-  { slug: "categories", source: "Categories", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "categories" },
-  { slug: "customerLogos", source: "CustomerLogos", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "customerlogos", skip: true },
-  { slug: "docs", source: "Docs", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "docs", skip: true },
-  { slug: "landing", source: "Landing", hasSlugField: true, hasDrafts: true, hasUpload: false, toolSegment: "landing", skip: true },
-  { slug: "landing-docs", source: "LandingDocs", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "landing_docs", skip: true },
-  { slug: "legal-docs", source: "LegalDocs", hasSlugField: false, hasDrafts: true, hasUpload: false, toolSegment: "legal_docs" },
-  { slug: "media", source: "Media", hasSlugField: false, hasDrafts: false, hasUpload: true, toolSegment: "media" },
-  { slug: "pages", source: "Pages", hasSlugField: true, hasDrafts: true, hasUpload: false, toolSegment: "pages" },
-  { slug: "testimonials", source: "Testimonials", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "testimonials", skip: true },
-  { slug: "users", source: "Users", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "users", skip: true },
+  { slug: "caseStudies", source: "CaseStudies", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "casestudies", landingCapable: false, skip: true },
+  { slug: "categories", source: "Categories", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "categories", landingCapable: false },
+  { slug: "customerLogos", source: "CustomerLogos", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "customerlogos", landingCapable: false, skip: true },
+  { slug: "gitops-landing", source: "GitopsLanding", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "gitops_landing", landingCapable: false, skip: true },
+  { slug: "gitops-pages", source: "GitopsPages", hasSlugField: true, hasDrafts: false, hasUpload: false, toolSegment: "gitops_pages", landingCapable: false, skip: true },
+  { slug: "landing", source: "Landing", hasSlugField: true, hasDrafts: true, hasUpload: false, toolSegment: "landing", landingCapable: true, sectionsField: "layout", schemaDir: "schema/landing", skip: true },
+  { slug: "legal-docs", source: "LegalDocs", hasSlugField: false, hasDrafts: true, hasUpload: false, toolSegment: "legal_docs", landingCapable: false },
+  { slug: "media", source: "Media", hasSlugField: false, hasDrafts: false, hasUpload: true, toolSegment: "media", landingCapable: false },
+  { slug: "pages", source: "Pages", hasSlugField: true, hasDrafts: true, hasUpload: false, toolSegment: "pages", landingCapable: true, sectionsField: "layout", schemaDir: "schema/pages", skip: true },
+  { slug: "testimonials", source: "Testimonials", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "testimonials", landingCapable: false, skip: true },
+  { slug: "users", source: "Users", hasSlugField: false, hasDrafts: false, hasUpload: false, toolSegment: "users", landingCapable: false, skip: true },
 ];
 
 export const SKIPPED_COLLECTIONS = COLLECTIONS.filter((c) => c.skip).map((c) => c.slug);

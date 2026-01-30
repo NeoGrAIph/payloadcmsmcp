@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "content",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blockType": { "const": "content" },
+    "blockName": { "type": "string" },
+    "richText": {
+      "description": "Markdown or Lexical JSON",
+      "type": ["string", "object", "array"]
+    },
+    "alignment": {
+      "type": "string",
+      "enum": ["left", "center", "right"],
+      "default": "left"
+    }
+  },
+  "required": ["blockType", "richText"]
+}

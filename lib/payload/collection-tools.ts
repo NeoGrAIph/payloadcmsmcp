@@ -127,7 +127,7 @@ export async function registerCollectionTools(server: McpServer) {
 
     server.tool(
       names.list,
-      `List ${collection.slug} documents with optional filters`,
+      `Список документов коллекции ${collection.slug} с фильтрами`,
       {
         where: z.record(z.any()).optional(),
         limit: z.number().min(1).max(100).optional(),
@@ -178,7 +178,7 @@ export async function registerCollectionTools(server: McpServer) {
 
     server.tool(
       names.get,
-      `Get a ${collection.slug} document by id or slug`,
+      `Получить документ ${collection.slug} по id или slug`,
       {
         id: collection.hasSlugField ? z.string().optional() : z.string(),
         ...(collection.hasSlugField ? { slug: z.string().optional() } : {}),
@@ -213,7 +213,7 @@ export async function registerCollectionTools(server: McpServer) {
     if (names.create) {
       server.tool(
         names.create,
-        `Create a ${collection.slug} document`,
+        `Создать документ ${collection.slug}`,
       {
         data: z.record(z.any()),
         ...(statusSchema ? { status: statusSchema } : {}),
@@ -257,7 +257,7 @@ export async function registerCollectionTools(server: McpServer) {
 
     server.tool(
       names.update,
-      `Update a ${collection.slug} document by id`,
+      `Обновить документ ${collection.slug} по id`,
       {
         id: z.string(),
         data: z.record(z.any()),
@@ -287,7 +287,7 @@ export async function registerCollectionTools(server: McpServer) {
 
     server.tool(
       names.delete,
-      `Delete a ${collection.slug} document by id`,
+      `Удалить документ ${collection.slug} по id`,
       {
         id: z.string(),
         locale: localeSchema,
@@ -315,7 +315,7 @@ export async function registerCollectionTools(server: McpServer) {
     if (collection.hasDrafts && names.setStatus) {
       server.tool(
         names.setStatus,
-        `Set ${collection.slug} status to draft or published`,
+        `Изменить статус документа ${collection.slug} на draft или published`,
         {
           id: collection.hasSlugField ? z.string().optional() : z.string(),
           ...(collection.hasSlugField ? { slug: z.string().optional() } : {}),

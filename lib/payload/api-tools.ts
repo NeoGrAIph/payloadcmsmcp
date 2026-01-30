@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { resolveDraft } from "./draft-utils.mjs";
+import { getLandingCollections, getLandingToolNames } from "./landing-tool-names";
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const MAX_BODY_BYTES = 1_500_000; // ~1.5 MB
@@ -51,8 +52,7 @@ function buildAuthHeaders() {
 export const DEV_SITE = "dev.synestra.io";
 export const PROD_SITE = "synestra.io";
 const PROD_ACCESS_MODE = (process.env.PAYLOAD_PROD_ACCESS_MODE || "restricted").toLowerCase();
-const LANDING_COLLECTION = "landing";
-const DEFAULT_SECTIONS_FIELD = "sections";
+const DEFAULT_LAYOUT_FIELD = "layout";
 const HERO_FIELD_CANDIDATES = [
   "heroH1",
   "heroTitle",
@@ -97,8 +97,9 @@ export function isProdAllowed(key: string): boolean {
   return PROD_ALLOWLIST.has(key.toLowerCase());
 }
 
-function ensureLandingIdentifier(id?: string, slug?: string) {
+function ensureIdentifier(id?: string, slug?: string, allowSlug = true) {
   if (!id && !slug) throw new Error("id or slug is required");
+  if (!allowSlug && slug) throw new Error("slug is not supported for this collection");
 }
 
 function appendWhereParams(params: URLSearchParams, value: any, path: string) {
@@ -153,24 +154,26 @@ export function buildLocaleDraftQuery(locale?: string, draft?: boolean): string 
 }
 
 async function fetchLandingDoc(opts: {
+  collection: string;
   id?: string;
   slug?: string;
+  allowSlug?: boolean;
   locale?: string;
   draft?: boolean;
   env?: string;
   site?: string;
   headers?: Record<string, string>;
 }) {
-  ensureLandingIdentifier(opts.id, opts.slug);
+  ensureIdentifier(opts.id, opts.slug, opts.allowSlug);
   if (opts.id) {
     const res = await doFetch({
       method: "GET",
-      path: `/api/${LANDING_COLLECTION}/${opts.id}${buildLocaleDraftQuery(opts.locale, opts.draft)}`,
+      path: `/api/${opts.collection}/${opts.id}${buildLocaleDraftQuery(opts.locale, opts.draft)}`,
       headers: opts.headers,
       env: opts.env,
       site: opts.site,
     });
-    if (!res.ok) throw new Error(`landing not found (status ${res.status})`);
+    if (!res.ok) throw new Error(`document not found (status ${res.status})`);
     return res.data;
   }
 
@@ -179,20 +182,22 @@ async function fetchLandingDoc(opts: {
   if (opts.locale) query.locale = opts.locale;
   const res = await doFetch({
     method: "GET",
-    path: `/api/${LANDING_COLLECTION}${buildQueryString(query, opts.draft)}`,
+    path: `/api/${opts.collection}${buildQueryString(query, opts.draft)}`,
     headers: opts.headers,
     env: opts.env,
     site: opts.site,
   });
-  if (!res.ok) throw new Error(`landing query failed (status ${res.status})`);
+  if (!res.ok) throw new Error(`collection query failed (status ${res.status})`);
   const doc = res.data?.docs?.[0];
-  if (!doc) throw new Error("landing not found");
+  if (!doc) throw new Error("document not found");
   return doc;
 }
 
 async function resolveLandingId(opts: {
+  collection: string;
   id?: string;
   slug?: string;
+  allowSlug?: boolean;
   locale?: string;
   draft?: boolean;
   env?: string;
@@ -202,15 +207,15 @@ async function resolveLandingId(opts: {
   if (opts.id) return opts.id;
   const doc = await fetchLandingDoc(opts);
   const resolved = doc?.id || doc?._id;
-  if (!resolved) throw new Error("landing id not found in response");
+  if (!resolved) throw new Error("document id not found in response");
   return resolved as string;
 }
 
-function ensureSections(doc: any, sectionsField?: string) {
-  const field = sectionsField || DEFAULT_SECTIONS_FIELD;
+function ensureSections(doc: any) {
+  const field = DEFAULT_LAYOUT_FIELD;
   const sections = doc?.[field];
   if (!Array.isArray(sections)) {
-    throw new Error(`sections field '${field}' is not an array`);
+    throw new Error(`layout field '${field}' is not an array`);
   }
   return { field, sections };
 }
@@ -651,465 +656,639 @@ export async function registerApiTools(server: McpServer) {
       return { content: [{ type: "text", text: JSON.stringify(cheat, null, 2) }] };
     }
   );
+  await registerLandingCollectionTools(server);
+}
 
-  server.tool(
-    "payload_landing_list",
-    "List landing documents with optional filters",
-    {
-      where: z.record(z.any()).optional(),
-      limit: z.number().min(1).max(100).optional(),
-      page: z.number().min(1).optional(),
-      sort: z.string().optional(),
-      status: z.enum(["draft", "published"]).optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ where, limit, page, sort, status, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_list")) {
-        throw new Error("prod access denied: payload_landing_list");
+async function registerLandingCollectionTools(server: McpServer) {
+  const landingCollections = getLandingCollections();
+  for (const collection of landingCollections) {
+    const names = getLandingToolNames(collection);
+    const allowSlug = collection.hasSlugField;
+
+    const envSchema = z.enum(["dev", "prod"]).optional();
+    const siteSchema = z.enum([DEV_SITE, PROD_SITE]).optional();
+    const headersSchema = z.record(z.string()).optional();
+    const localeSchema = z.enum(["ru", "en"]).optional().default("ru");
+    const draftSchema = collection.hasDrafts ? z.boolean().optional() : undefined;
+    const statusSchema = collection.hasDrafts ? z.enum(["draft", "published"]).optional() : undefined;
+
+    server.tool(
+      names.list,
+      `Список документов ${collection.slug} с фильтрами`,
+      {
+        where: z.record(z.any()).optional(),
+        limit: z.number().min(1).max(100).optional(),
+        page: z.number().min(1).optional(),
+        sort: z.string().optional(),
+        ...(statusSchema ? { status: statusSchema } : {}),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ where, limit, page, sort, status, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.list)) {
+          throw new Error(`prod access denied: ${names.list}`);
+        }
+        let finalWhere = where || {};
+        let effectiveDraft = draft;
+        if (collection.hasDrafts) {
+          effectiveDraft = resolveDraft({ status, draft, where });
+          if (status) {
+            const statusFilter = { _status: { equals: status } };
+            if (Object.keys(finalWhere).length) {
+              finalWhere = { and: [finalWhere, statusFilter] };
+            } else {
+              finalWhere = statusFilter;
+            }
+          }
+        }
+        const query: any = {};
+        if (Object.keys(finalWhere).length) query.where = finalWhere;
+        if (limit) query.limit = limit;
+        if (page) query.page = page;
+        if (sort) query.sort = sort;
+        if (locale) query.locale = locale;
+
+        const res = await doFetch({
+          method: "GET",
+          path: `/api/${collection.slug}${buildQueryString(query, effectiveDraft)}`,
+          headers,
+          env,
+          site,
+        });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
       }
-      const effectiveDraft = resolveDraft({ status, draft, where });
-      let finalWhere = where || {};
-      if (status) {
-        const statusFilter = { _status: { equals: status } };
-        if (Object.keys(finalWhere).length) {
-          finalWhere = { and: [finalWhere, statusFilter] };
+    );
+
+    server.tool(
+      names.get,
+      `Получить документ ${collection.slug} по id${allowSlug ? " или slug" : ""}`,
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        ...(statusSchema ? { status: statusSchema } : {}),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, status, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.get)) {
+          throw new Error(`prod access denied: ${names.get}`);
+        }
+        const effectiveDraft = collection.hasDrafts ? resolveDraft({ status, draft }) : draft;
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft: effectiveDraft,
+          env,
+          site,
+          headers,
+        });
+        const payload = { ...(doc || {}), _mcp: buildMcpMeta(target.env) };
+        return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
+      }
+    );
+
+    server.tool(
+      names.heroGet,
+      "Получить hero‑поля и опциональный hero‑блок",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        blockType: z.string().optional(),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, locale, draft, blockType, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.heroGet)) {
+          throw new Error(`prod access denied: ${names.heroGet}`);
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const hero: Record<string, any> = {};
+        for (const key of HERO_FIELD_CANDIDATES) {
+          if (doc && doc[key] !== undefined) hero[key] = doc[key];
+        }
+        let heroBlock: any = undefined;
+        try {
+          const { sections } = ensureSections(doc);
+          const found = findHeroBlock(sections, blockType);
+          if (found) {
+            heroBlock = { index: found.index, block: found.block };
+          }
+        } catch {
+          /* ignore missing sections */
+        }
+        const payload = {
+          id: doc?.id || doc?._id,
+          slug: doc?.slug,
+          hero,
+          heroBlock,
+          _mcp: buildMcpMeta(target.env),
+        };
+        return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
+      }
+    );
+
+    server.tool(
+      names.blocksList,
+      "Список блоков layout с индексами и краткими данными",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        ...(statusSchema ? { status: statusSchema } : {}),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, status, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blocksList)) {
+          throw new Error(`prod access denied: ${names.blocksList}`);
+        }
+        const effectiveDraft = collection.hasDrafts ? resolveDraft({ status, draft }) : draft;
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft: effectiveDraft,
+          env,
+          site,
+          headers,
+        });
+        const { field, sections } = ensureSections(doc);
+        const blocks = sections.map((block: any, index: number) => ({
+          index,
+          id: block?.id || block?._id,
+          blockType: block?.blockType,
+          blockName: block?.blockName,
+          summary: summarizeBlock(block),
+        }));
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ field, blocks, _mcp: buildMcpMeta(target.env) }, null, 2),
+            },
+          ],
+        };
+      }
+    );
+
+    server.tool(
+      names.blockGet,
+      "Получить блок layout по index или blockId",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        index: z.number().int().min(0).optional(),
+        blockId: z.string().optional(),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, index, blockId, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blockGet)) {
+          throw new Error(`prod access denied: ${names.blockGet}`);
+        }
+        if (blockId === undefined && index === undefined) {
+          throw new Error("blockId or index is required");
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const { field, sections } = ensureSections(doc);
+        let block: any = undefined;
+        let resolvedIndex: number | undefined = undefined;
+        if (blockId) {
+          resolvedIndex = sections.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
+          if (resolvedIndex >= 0) block = sections[resolvedIndex];
+        } else if (index !== undefined) {
+          block = sections[index];
+          resolvedIndex = index;
+        }
+        if (!block) throw new Error("block not found");
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ field, index: resolvedIndex, block, _mcp: buildMcpMeta(target.env) }, null, 2),
+            },
+          ],
+        };
+      }
+    );
+
+    if (names.create) {
+      server.tool(
+        names.create,
+        `Создать документ ${collection.slug}`,
+        {
+          data: z.record(z.any()),
+          ...(statusSchema ? { status: statusSchema } : {}),
+          locale: localeSchema,
+          ...(draftSchema ? { draft: draftSchema } : {}),
+          headers: headersSchema,
+          env: envSchema,
+          site: siteSchema,
+        },
+        async ({ data, status, locale, draft, headers, env, site }) => {
+          const target = resolveTarget(site, env);
+          if (target.env === "prod" && !isProdAllowed(names.create!)) {
+            throw new Error(`prod access denied: ${names.create}`);
+          }
+          let effectiveDraft = draft;
+          const body = { ...data } as Record<string, any>;
+          if (collection.hasDrafts && status) {
+            const statusDraft = status === "draft";
+            if (draft !== undefined && draft !== statusDraft) {
+              throw new Error("status conflicts with draft; provide only one");
+            }
+            if (body._status !== undefined && body._status !== status) {
+              throw new Error("status conflicts with data._status");
+            }
+            body._status = status;
+            effectiveDraft = statusDraft;
+          }
+          const path = `/api/${collection.slug}${buildLocaleDraftQuery(locale, effectiveDraft)}`;
+          const res = await doFetch({ method: "POST", path, body, headers, env, site });
+          return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+        }
+      );
+    }
+
+    server.tool(
+      names.update,
+      `Обновить документ ${collection.slug} (верхний уровень)`,
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        data: z.record(z.any()),
+        mode: z.enum(["safe", "merge"]).optional().default("safe"),
+        allowUnsafe: z.boolean().optional().default(false),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, data, mode, allowUnsafe, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.update)) {
+          throw new Error(`prod access denied: ${names.update}`);
+        }
+        if (mode !== "safe" && !allowUnsafe) {
+          throw new Error("unsafe mode requires allowUnsafe=true");
+        }
+        const resolvedId = await resolveLandingId({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+        const body =
+          mode === "safe"
+            ? buildSafePatch(
+                await fetchLandingDoc({
+                  collection: collection.slug,
+                  id: resolvedId,
+                  allowSlug: false,
+                  locale,
+                  draft,
+                  env,
+                  site,
+                  headers,
+                }),
+                data,
+                "data"
+              )
+            : data;
+        const res = await doFetch({ method: "PATCH", path, body, headers, env, site });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+      }
+    );
+
+    server.tool(
+      names.delete,
+      `Удалить документ ${collection.slug}`,
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.delete)) {
+          throw new Error(`prod access denied: ${names.delete}`);
+        }
+        const resolvedId = await resolveLandingId({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          env,
+          site,
+          headers,
+        });
+        const res = await doFetch({
+          method: "DELETE",
+          path: `/api/${collection.slug}/${resolvedId}`,
+          headers,
+          env,
+          site,
+        });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+      }
+    );
+
+    server.tool(
+      names.blockAdd,
+      "Добавить блок в layout",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        block: z.record(z.any()),
+        position: z.number().int().min(0).optional(),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, block, position, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blockAdd)) {
+          throw new Error(`prod access denied: ${names.blockAdd}`);
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const resolvedId = doc?.id || doc?._id;
+        if (!resolvedId) throw new Error("document id not found in response");
+        const { field, sections } = ensureSections(doc);
+        const copy = sections.slice();
+        if (position === undefined || position >= copy.length) {
+          copy.push(block);
         } else {
-          finalWhere = statusFilter;
+          copy.splice(position, 0, block);
         }
+        const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+        const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
       }
-      const query: any = {};
-      if (Object.keys(finalWhere).length) query.where = finalWhere;
-      if (limit) query.limit = limit;
-      if (page) query.page = page;
-      if (sort) query.sort = sort;
-      if (locale) query.locale = locale;
+    );
 
-      const res = await doFetch({
-        method: "GET",
-        path: `/api/${LANDING_COLLECTION}${buildQueryString(query, effectiveDraft)}`,
-        headers,
-        env,
-        site,
-      });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_get",
-    "Get a landing document by id or slug",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      status: z.enum(["draft", "published"]).optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, status, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_get")) {
-        throw new Error("prod access denied: payload_landing_get");
-      }
-      const effectiveDraft = resolveDraft({ status, draft });
-      const doc = await fetchLandingDoc({ id, slug, locale, draft: effectiveDraft, env, site, headers });
-      const payload = { ...(doc || {}), _mcp: buildMcpMeta(target.env) };
-      return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_hero_get",
-    "Get hero-related fields and optional hero block",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      blockType: z.string().optional(),
-      sectionsField: z.string().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, locale, draft, blockType, sectionsField, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_hero_get")) {
-        throw new Error("prod access denied: payload_landing_hero_get");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const hero: Record<string, any> = {};
-      for (const key of HERO_FIELD_CANDIDATES) {
-        if (doc && doc[key] !== undefined) hero[key] = doc[key];
-      }
-      let heroBlock: any = undefined;
-      try {
-        const { sections } = ensureSections(doc, sectionsField);
-        const found = findHeroBlock(sections, blockType);
-        if (found) {
-          heroBlock = { index: found.index, block: found.block };
+    server.tool(
+      names.blockUpdate,
+      "Обновить блок в layout",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        index: z.number().int().min(0).optional(),
+        blockId: z.string().optional(),
+        patch: z.record(z.any()),
+        mode: z.enum(["safe", "merge", "replace"]).optional().default("safe"),
+        allowUnsafe: z.boolean().optional().default(false),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, index, blockId, patch, mode, allowUnsafe, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blockUpdate)) {
+          throw new Error(`prod access denied: ${names.blockUpdate}`);
         }
-      } catch {
-        /* ignore missing sections */
+        if (blockId === undefined && index === undefined) {
+          throw new Error("blockId or index is required");
+        }
+        if (mode !== "safe" && !allowUnsafe) {
+          throw new Error("unsafe mode requires allowUnsafe=true");
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const resolvedId = doc?.id || doc?._id;
+        if (!resolvedId) throw new Error("document id not found in response");
+        const { field, sections } = ensureSections(doc);
+        const copy = sections.slice();
+        let resolvedIndex: number | undefined = undefined;
+        if (blockId) {
+          resolvedIndex = copy.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
+        } else if (index !== undefined) {
+          resolvedIndex = index;
+        }
+        if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= copy.length) {
+          throw new Error("block not found");
+        }
+        const current = copy[resolvedIndex];
+        const next =
+          mode === "replace"
+            ? patch
+            : mode === "merge"
+              ? { ...current, ...patch }
+              : deepMergeSafe(current, patch);
+        copy[resolvedIndex] = next;
+        const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+        const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
       }
-      const payload = {
-        id: doc?.id || doc?._id,
-        slug: doc?.slug,
-        hero,
-        heroBlock,
-        _mcp: buildMcpMeta(target.env),
-      };
-      return { content: [{ type: "text", text: JSON.stringify(payload, null, 2) }] };
-    }
-  );
+    );
 
-  server.tool(
-    "payload_landing_blocks_list",
-    "List landing blocks with indexes and summaries",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      status: z.enum(["draft", "published"]).optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      sectionsField: z.string().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, status, locale, draft, sectionsField, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_blocks_list")) {
-        throw new Error("prod access denied: payload_landing_blocks_list");
+    server.tool(
+      names.blockRemove,
+      "Удалить блок из layout",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        index: z.number().int().min(0).optional(),
+        blockId: z.string().optional(),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, index, blockId, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blockRemove)) {
+          throw new Error(`prod access denied: ${names.blockRemove}`);
+        }
+        if (blockId === undefined && index === undefined) {
+          throw new Error("blockId or index is required");
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const resolvedId = doc?.id || doc?._id;
+        if (!resolvedId) throw new Error("document id not found in response");
+        const { field, sections } = ensureSections(doc);
+        const copy = sections.slice();
+        let resolvedIndex: number | undefined = undefined;
+        if (blockId) {
+          resolvedIndex = copy.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
+        } else if (index !== undefined) {
+          resolvedIndex = index;
+        }
+        if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= copy.length) {
+          throw new Error("block not found");
+        }
+        copy.splice(resolvedIndex, 1);
+        const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+        const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
       }
-      const effectiveDraft = resolveDraft({ status, draft });
-      const doc = await fetchLandingDoc({ id, slug, locale, draft: effectiveDraft, env, site, headers });
-      const { field, sections } = ensureSections(doc, sectionsField);
-      const blocks = sections.map((block: any, index: number) => ({
-        index,
-        id: block?.id || block?._id,
-        blockType: block?.blockType,
-        blockName: block?.blockName,
-        summary: summarizeBlock(block),
-      }));
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ field, blocks, _mcp: buildMcpMeta(target.env) }, null, 2),
-          },
-        ],
-      };
-    }
-  );
+    );
 
-  server.tool(
-    "payload_landing_block_get",
-    "Get a single landing block by index or blockId",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      index: z.number().int().min(0).optional(),
-      blockId: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      sectionsField: z.string().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, index, blockId, locale, draft, sectionsField, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_block_get")) {
-        throw new Error("prod access denied: payload_landing_block_get");
+    server.tool(
+      names.blockMove,
+      "Переместить блок в layout",
+      {
+        id: allowSlug ? z.string().optional() : z.string(),
+        ...(allowSlug ? { slug: z.string().optional() } : {}),
+        from: z.number().int().min(0),
+        to: z.number().int().min(0),
+        locale: localeSchema,
+        ...(draftSchema ? { draft: draftSchema } : {}),
+        headers: headersSchema,
+        env: envSchema,
+        site: siteSchema,
+      },
+      async ({ id, slug, from, to, locale, draft, headers, env, site }) => {
+        const target = resolveTarget(site, env);
+        if (target.env === "prod" && !isProdAllowed(names.blockMove)) {
+          throw new Error(`prod access denied: ${names.blockMove}`);
+        }
+        const doc = await fetchLandingDoc({
+          collection: collection.slug,
+          id,
+          slug: allowSlug ? slug : undefined,
+          allowSlug,
+          locale,
+          draft,
+          env,
+          site,
+          headers,
+        });
+        const resolvedId = doc?.id || doc?._id;
+        if (!resolvedId) throw new Error("document id not found in response");
+        const { field, sections } = ensureSections(doc);
+        const copy = sections.slice();
+        if (from < 0 || from >= copy.length || to < 0 || to >= copy.length) {
+          throw new Error("from/to out of range");
+        }
+        const [item] = copy.splice(from, 1);
+        copy.splice(to, 0, item);
+        const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+        const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
+        return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
       }
-      if (blockId === undefined && index === undefined) {
-        throw new Error("blockId or index is required");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const { field, sections } = ensureSections(doc, sectionsField);
-      let block: any = undefined;
-      let resolvedIndex: number | undefined = undefined;
-      if (blockId) {
-        resolvedIndex = sections.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
-        if (resolvedIndex >= 0) block = sections[resolvedIndex];
-      } else if (index !== undefined) {
-        block = sections[index];
-        resolvedIndex = index;
-      }
-      if (!block) throw new Error("block not found");
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify({ field, index: resolvedIndex, block, _mcp: buildMcpMeta(target.env) }, null, 2),
-          },
-        ],
-      };
-    }
-  );
+    );
 
-  server.tool(
-    "payload_landing_create",
-    "Create a landing document",
-    {
-      data: z.record(z.any()),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ data, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_create")) {
-        throw new Error("prod access denied: payload_landing_create");
-      }
-      const path = `/api/${LANDING_COLLECTION}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "POST", path, body: data, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+    if (names.setStatus) {
+      server.tool(
+        names.setStatus,
+        `Изменить статус ${collection.slug} на draft/published`,
+        {
+          id: allowSlug ? z.string().optional() : z.string(),
+          ...(allowSlug ? { slug: z.string().optional() } : {}),
+          status: z.enum(["draft", "published"]),
+          locale: localeSchema,
+          headers: headersSchema,
+          env: envSchema,
+          site: siteSchema,
+        },
+        async ({ id, slug, status, locale, headers, env, site }) => {
+          const target = resolveTarget(site, env);
+          if (target.env === "prod" && !isProdAllowed(names.setStatus!)) {
+            throw new Error(`prod access denied: ${names.setStatus}`);
+          }
+          const resolvedId = await resolveLandingId({
+            collection: collection.slug,
+            id,
+            slug: allowSlug ? slug : undefined,
+            allowSlug,
+            locale,
+            env,
+            site,
+            headers,
+          });
+          const draft = status === "draft";
+          const path = `/api/${collection.slug}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
+          const res = await doFetch({ method: "PATCH", path, body: {}, headers, env, site });
+          return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+        }
+      );
     }
-  );
-
-  server.tool(
-    "payload_landing_update",
-    "Update a landing document (top-level fields)",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      data: z.record(z.any()),
-      mode: z.enum(["safe", "merge"]).optional().default("safe"),
-      allowUnsafe: z.boolean().optional().default(false),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, data, mode, allowUnsafe, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_update")) {
-        throw new Error("prod access denied: payload_landing_update");
-      }
-      if (mode !== "safe" && !allowUnsafe) {
-        throw new Error("unsafe mode requires allowUnsafe=true");
-      }
-      const resolvedId = await resolveLandingId({ id, slug, locale, draft, env, site, headers });
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const body =
-        mode === "safe"
-          ? buildSafePatch(
-              await fetchLandingDoc({ id: resolvedId, locale, draft, env, site, headers }),
-              data,
-              "data"
-            )
-          : data;
-      const res = await doFetch({ method: "PATCH", path, body, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_block_add",
-    "Add a block to landing sections",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      block: z.record(z.any()),
-      position: z.number().int().min(0).optional(),
-      sectionsField: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, block, position, sectionsField, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_block_add")) {
-        throw new Error("prod access denied: payload_landing_block_add");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const resolvedId = doc?.id || doc?._id;
-      if (!resolvedId) throw new Error("landing id not found in response");
-      const { field, sections } = ensureSections(doc, sectionsField);
-      const copy = sections.slice();
-      if (position === undefined || position >= copy.length) {
-        copy.push(block);
-      } else {
-        copy.splice(position, 0, block);
-      }
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_block_update",
-    "Update a single block in landing sections",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      index: z.number().int().min(0).optional(),
-      blockId: z.string().optional(),
-      patch: z.record(z.any()),
-      mode: z.enum(["safe", "merge", "replace"]).optional().default("safe"),
-      allowUnsafe: z.boolean().optional().default(false),
-      sectionsField: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, index, blockId, patch, mode, allowUnsafe, sectionsField, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_block_update")) {
-        throw new Error("prod access denied: payload_landing_block_update");
-      }
-      if (blockId === undefined && index === undefined) {
-        throw new Error("blockId or index is required");
-      }
-      if (mode !== "safe" && !allowUnsafe) {
-        throw new Error("unsafe mode requires allowUnsafe=true");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const resolvedId = doc?.id || doc?._id;
-      if (!resolvedId) throw new Error("landing id not found in response");
-      const { field, sections } = ensureSections(doc, sectionsField);
-      const copy = sections.slice();
-      let resolvedIndex: number | undefined = undefined;
-      if (blockId) {
-        resolvedIndex = copy.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
-      } else if (index !== undefined) {
-        resolvedIndex = index;
-      }
-      if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= copy.length) {
-        throw new Error("block not found");
-      }
-      const current = copy[resolvedIndex];
-      const next = mode === "replace"
-        ? patch
-        : mode === "merge"
-          ? { ...current, ...patch }
-          : deepMergeSafe(current, patch);
-      copy[resolvedIndex] = next;
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_block_remove",
-    "Remove a block from landing sections",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      index: z.number().int().min(0).optional(),
-      blockId: z.string().optional(),
-      sectionsField: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, index, blockId, sectionsField, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_block_remove")) {
-        throw new Error("prod access denied: payload_landing_block_remove");
-      }
-      if (blockId === undefined && index === undefined) {
-        throw new Error("blockId or index is required");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const resolvedId = doc?.id || doc?._id;
-      if (!resolvedId) throw new Error("landing id not found in response");
-      const { field, sections } = ensureSections(doc, sectionsField);
-      const copy = sections.slice();
-      let resolvedIndex: number | undefined = undefined;
-      if (blockId) {
-        resolvedIndex = copy.findIndex((b: any) => b?.id === blockId || b?._id === blockId);
-      } else if (index !== undefined) {
-        resolvedIndex = index;
-      }
-      if (resolvedIndex === undefined || resolvedIndex < 0 || resolvedIndex >= copy.length) {
-        throw new Error("block not found");
-      }
-      copy.splice(resolvedIndex, 1);
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_block_move",
-    "Move a block within landing sections",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      from: z.number().int().min(0),
-      to: z.number().int().min(0),
-      sectionsField: z.string().optional(),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      draft: z.boolean().optional(),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, from, to, sectionsField, locale, draft, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_block_move")) {
-        throw new Error("prod access denied: payload_landing_block_move");
-      }
-      const doc = await fetchLandingDoc({ id, slug, locale, draft, env, site, headers });
-      const resolvedId = doc?.id || doc?._id;
-      if (!resolvedId) throw new Error("landing id not found in response");
-      const { field, sections } = ensureSections(doc, sectionsField);
-      const copy = sections.slice();
-      if (from < 0 || from >= copy.length || to < 0 || to >= copy.length) {
-        throw new Error("from/to out of range");
-      }
-      const [item] = copy.splice(from, 1);
-      copy.splice(to, 0, item);
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: { [field]: copy }, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
-
-  server.tool(
-    "payload_landing_set_status",
-    "Set landing status to draft or published",
-    {
-      id: z.string().optional(),
-      slug: z.string().optional(),
-      status: z.enum(["draft", "published"]),
-      locale: z.enum(["ru", "en"]).optional().default("ru"),
-      headers: z.record(z.string()).optional(),
-      env: z.enum(["dev", "prod"]).optional(),
-      site: z.enum([DEV_SITE, PROD_SITE]).optional(),
-    },
-    async ({ id, slug, status, locale, headers, env, site }) => {
-      const target = resolveTarget(site, env);
-      if (target.env === "prod" && !isProdAllowed("payload_landing_set_status")) {
-        throw new Error("prod access denied: payload_landing_set_status");
-      }
-      const resolvedId = await resolveLandingId({ id, slug, locale, env, site, headers });
-      const draft = status === "draft";
-      const path = `/api/${LANDING_COLLECTION}/${resolvedId}${buildLocaleDraftQuery(locale, draft)}`;
-      const res = await doFetch({ method: "PATCH", path, body: {}, headers, env, site });
-      return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
-    }
-  );
+  }
 }

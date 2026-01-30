@@ -12,6 +12,8 @@ const webCoreRoot =
 
 const payloadConfigPath = path.join(webCoreRoot, "payload.config.ts");
 const outputPath = path.join(repoRoot, "lib", "payload", "collection-tools.generated.ts");
+const schemaRoot = path.join(repoRoot, "schema");
+const landingSchemaRoot = path.join(schemaRoot, "landing");
 
 function stripComments(source) {
   return source
@@ -112,8 +114,51 @@ function detectHasDrafts(source) {
   return false;
 }
 
+function detectLandingCapable(source) {
+  const hasLayoutName = /\bname\s*:\s*['"]layout['"]/.test(source);
+  const hasBlocksType = /\btype\s*:\s*['"]blocks['"]/.test(source);
+  if (!hasLayoutName || !hasBlocksType) return false;
+  const layoutThenBlocks = /name\s*:\s*['"]layout['"][\s\S]{0,240}?type\s*:\s*['"]blocks['"]/.test(source);
+  const blocksThenLayout = /type\s*:\s*['"]blocks['"][\s\S]{0,240}?name\s*:\s*['"]layout['"]/.test(source);
+  return layoutThenBlocks || blocksThenLayout;
+}
+
 function toToolSegment(slug) {
   return slug.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+async function ensureSchemaDir(slug, warnings) {
+  const targetDir = path.join(schemaRoot, slug);
+  try {
+    const stat = await fs.stat(targetDir);
+    if (stat.isDirectory()) return;
+  } catch {
+    // ignore missing
+  }
+
+  await fs.mkdir(targetDir, { recursive: true });
+  if (slug === "landing") return;
+
+  let templateFiles = [];
+  try {
+    templateFiles = await fs.readdir(landingSchemaRoot);
+  } catch (err) {
+    warnings.push(`Schema template not found: ${path.relative(repoRoot, landingSchemaRoot)}`);
+    return;
+  }
+
+  for (const file of templateFiles) {
+    if (!file.endsWith(".schema.json")) continue;
+    const src = path.join(landingSchemaRoot, file);
+    const dest = path.join(targetDir, file);
+    try {
+      await fs.stat(dest);
+      continue;
+    } catch {
+      // copy when missing
+    }
+    await fs.copyFile(src, dest);
+  }
 }
 
 async function main() {
@@ -161,6 +206,7 @@ async function main() {
     const hasSlugField = detectHasSlugField(fileContent);
     const hasDrafts = detectHasDrafts(fileContent);
     const hasUpload = detectHasUpload(fileContent);
+    const landingCapable = detectLandingCapable(fileContent);
 
     results.push({
       slug,
@@ -169,17 +215,25 @@ async function main() {
       hasDrafts,
       hasUpload,
       toolSegment: toToolSegment(slug),
+      landingCapable,
+      sectionsField: landingCapable ? "layout" : undefined,
+      schemaDir: landingCapable ? `schema/${slug}` : undefined,
     });
   }
 
   results.sort((a, b) => a.slug.localeCompare(b.slug));
 
+  for (const collection of results) {
+    if (!collection.landingCapable) continue;
+    await ensureSchemaDir(collection.slug, warnings);
+  }
+
   const skipped = new Set([
     "landing",
     "users",
     "testimonials",
-    "docs",
-    "landing-docs",
+    "gitops-pages",
+    "gitops-landing",
     "customerLogos",
     "caseStudies",
   ]);
@@ -194,17 +248,22 @@ async function main() {
   lines.push("  hasDrafts: boolean;");
   lines.push("  hasUpload: boolean;");
   lines.push("  toolSegment: string;");
+  lines.push("  landingCapable?: boolean;");
+  lines.push("  sectionsField?: string;");
+  lines.push("  schemaDir?: string;");
   lines.push("  skip?: boolean;");
   lines.push("};\n");
   lines.push("export const COLLECTIONS: CollectionDescriptor[] = [");
   for (const item of results) {
-    const skip = skipped.has(item.slug);
+    const skip = skipped.has(item.slug) || item.landingCapable;
     lines.push(
       `  { slug: ${JSON.stringify(item.slug)}, source: ${JSON.stringify(
         item.source
       )}, hasSlugField: ${item.hasSlugField}, hasDrafts: ${item.hasDrafts}, hasUpload: ${item.hasUpload}, toolSegment: ${JSON.stringify(
         item.toolSegment
-      )}${skip ? ", skip: true" : ""} },`
+      )}, landingCapable: ${item.landingCapable}${item.sectionsField ? `, sectionsField: ${JSON.stringify(item.sectionsField)}` : ""}${
+        item.schemaDir ? `, schemaDir: ${JSON.stringify(item.schemaDir)}` : ""
+      }${skip ? ", skip: true" : ""} },`
     );
   }
   lines.push("];\n");

@@ -8,13 +8,14 @@ addFormats(ajv);
 
 export type LandingSchemaMap = Record<string, ValidateFunction>;
 
-export async function loadLandingSchemas(schemaDir = path.join(process.cwd(), "schema", "landing")): Promise<LandingSchemaMap> {
-  const entries = await fs.readdir(schemaDir);
+export async function loadLandingSchemas(schemaDir = "schema/landing"): Promise<LandingSchemaMap> {
+  const resolvedDir = path.isAbsolute(schemaDir) ? schemaDir : path.join(process.cwd(), schemaDir);
+  const entries = await fs.readdir(resolvedDir);
   const validators: LandingSchemaMap = {};
   for (const file of entries) {
     if (!file.endsWith(".schema.json")) continue;
     const slug = file.replace(".schema.json", "");
-    const raw = await fs.readFile(path.join(schemaDir, file), "utf8");
+    const raw = await fs.readFile(path.join(resolvedDir, file), "utf8");
     const schema = JSON.parse(raw);
     validators[slug] = ajv.compile(schema);
   }

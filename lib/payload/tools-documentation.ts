@@ -1,5 +1,6 @@
 import { COLLECTIONS } from "./collection-tools.generated";
 import { getCollectionToolNames } from "./collection-tools";
+import { getLandingCollections, getLandingToolNames, listLandingSiteBoundToolNames } from "./landing-tool-names";
 
 type ToolParam = {
   name: string;
@@ -37,6 +38,7 @@ export type ToolAnnotations = {
 };
 
 const COLLECTION_TOOL_NAMES = getCollectionToolNames();
+const LANDING_SITE_BOUND_TOOL_NAMES = listLandingSiteBoundToolNames();
 
 const SITE_BOUND_TOOLS = new Set([
   "payload_api_request",
@@ -45,18 +47,7 @@ const SITE_BOUND_TOOLS = new Set([
   "payload_api_update",
   "payload_api_delete",
   "payload_api_upload",
-  "payload_landing_list",
-  "payload_landing_get",
-  "payload_landing_hero_get",
-  "payload_landing_blocks_list",
-  "payload_landing_block_get",
-  "payload_landing_create",
-  "payload_landing_update",
-  "payload_landing_block_add",
-  "payload_landing_block_update",
-  "payload_landing_block_remove",
-  "payload_landing_block_move",
-  "payload_landing_set_status",
+  ...LANDING_SITE_BOUND_TOOL_NAMES,
   ...COLLECTION_TOOL_NAMES,
 ]);
 
@@ -71,14 +62,14 @@ function getReturnsWithMeta(doc: ToolDoc) {
 function buildCollectionToolDocs(): Record<string, ToolDoc> {
   const docs: Record<string, ToolDoc> = {};
   const siteParams: ToolParam[] = [
-    { name: "headers", type: "object", description: "Extra headers." },
-    { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-    { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
+    { name: "headers", type: "object", description: "Дополнительные заголовки." },
+    { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Выбор сайта." },
+    { name: "env", type: "enum(dev|prod)", description: "Выбор окружения." },
   ];
   const localeParam: ToolParam = {
     name: "locale",
     type: "enum(ru|en)",
-    description: "Locale (default ru).",
+    description: "Локаль (по умолчанию ru).",
     default: "ru",
   };
 
@@ -94,20 +85,20 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
     const setStatusName = `payload_${segment}_set_status`;
 
     const statusParams = collection.hasDrafts
-      ? [{ name: "status", type: "enum(draft|published)", description: "Status filter." }]
+      ? [{ name: "status", type: "enum(draft|published)", description: "Фильтр статуса." }]
       : [];
     const draftParams = collection.hasDrafts
-      ? [{ name: "draft", type: "boolean", description: "Include drafts (Payload versions)." }]
+      ? [{ name: "draft", type: "boolean", description: "Включать черновики (версии Payload)." }]
       : [];
     const uploadNote = collection.hasUpload
-      ? ["For uploads, use payload_api_upload to create files."]
+      ? ["Для загрузок используйте payload_api_upload."]
       : [];
 
     const listParams: ToolParam[] = [
-      { name: "where", type: "object", description: "Payload where filter object." },
-      { name: "limit", type: "number", description: "Max results (1-100)." },
-      { name: "page", type: "number", description: "Pagination page." },
-      { name: "sort", type: "string", description: "Sort string (e.g. -updatedAt)." },
+      { name: "where", type: "object", description: "Фильтр where (Payload)." },
+      { name: "limit", type: "number", description: "Максимум результатов (1–100)." },
+      { name: "page", type: "number", description: "Страница пагинации." },
+      { name: "sort", type: "string", description: "Сортировка (например, -updatedAt)." },
       ...statusParams,
       localeParam,
       ...draftParams,
@@ -116,33 +107,33 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
 
     docs[listName] = {
       name: listName,
-      summary: `List ${collection.slug} documents.`,
-      description: `Lists documents from the ${collection.slug} collection with optional filters.`,
+      summary: `Список документов ${collection.slug}.`,
+      description: `Возвращает документы коллекции ${collection.slug} с фильтрами.`,
       category: "collection",
       readOnly: true,
       destructive: false,
       parameters: listParams,
-      returns: "JSON with status, ok, and data.",
+      returns: "JSON со status, ok и data.",
       examples: [
         {
-          title: `List ${collection.slug}`,
+          title: `Список ${collection.slug}`,
           input: collection.hasDrafts ? { status: "published", limit: 5 } : { limit: 5 },
         },
       ],
       bestPractices: [
-        "Use small limits.",
-        "Use status filter to control draft visibility when supported.",
+        "Используйте небольшие лимиты.",
+        "Для коллекций с черновиками используйте фильтр status.",
         ...uploadNote,
       ],
-      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
     };
 
     const getParams: ToolParam[] = [];
     if (collection.hasSlugField) {
-      getParams.push({ name: "id", type: "string", description: "Document id." });
-      getParams.push({ name: "slug", type: "string", description: "Document slug." });
+      getParams.push({ name: "id", type: "string", description: "ID документа." });
+      getParams.push({ name: "slug", type: "string", description: "Slug документа." });
     } else {
-      getParams.push({ name: "id", type: "string", required: true, description: "Document id." });
+      getParams.push({ name: "id", type: "string", required: true, description: "ID документа." });
     }
     getParams.push(...statusParams);
     getParams.push(localeParam);
@@ -151,104 +142,104 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
 
     docs[getName] = {
       name: getName,
-      summary: `Get a ${collection.slug} document.`,
-      description: `Fetches a ${collection.slug} document by id${
+      summary: `Получить документ ${collection.slug}.`,
+      description: `Получает документ ${collection.slug} по id${
         collection.hasSlugField ? " or slug" : ""
       }.`,
       category: "collection",
       readOnly: true,
       destructive: false,
       parameters: getParams,
-      returns: "Document JSON.",
+      returns: "JSON документа.",
       examples: [
         {
-          title: `Get ${collection.slug}`,
+          title: `Получить ${collection.slug}`,
           input: collection.hasSlugField ? { slug: "example" } : { id: "123" },
         },
       ],
-      bestPractices: ["Prefer id for stable lookups.", ...uploadNote],
+      bestPractices: ["Для стабильных запросов предпочтителен id.", ...uploadNote],
       pitfalls: [
-        ...(collection.hasSlugField ? ["Either id or slug is required."] : []),
-        "Prod gated by site+env and allowlist in restricted mode.",
+        ...(collection.hasSlugField ? ["Нужен id или slug."] : []),
+        "Prod требует site+env и allowlist в ограниченном режиме.",
       ],
     };
 
     if (!collection.hasUpload) {
       const createStatusParams = collection.hasDrafts
-        ? [{ name: "status", type: "enum(draft|published)", description: "Status hint (sets draft flag)." }]
+        ? [{ name: "status", type: "enum(draft|published)", description: "Подсказка статуса (ставит _status)." }]
         : [];
       docs[createName] = {
         name: createName,
-        summary: `Create a ${collection.slug} document.`,
-        description: `Creates a document in the ${collection.slug} collection. For draft-enabled collections, status sets _status.`,
+        summary: `Создать документ ${collection.slug}.`,
+        description: `Создаёт документ в коллекции ${collection.slug}. Для коллекций с черновиками status задаёт _status.`,
         category: "collection",
         readOnly: false,
         destructive: true,
         parameters: [
-          { name: "data", type: "object", required: true, description: "Document payload." },
+          { name: "data", type: "object", required: true, description: "Данные документа." },
           ...createStatusParams,
           localeParam,
           ...draftParams,
           ...siteParams,
         ],
-        returns: "JSON with status, ok, and data.",
-        examples: [{ title: `Create ${collection.slug}`, input: { data: {} } }],
-        bestPractices: ["Use dev by default; keep payloads minimal."],
+        returns: "JSON со status, ok и data.",
+        examples: [{ title: `Создать ${collection.slug}`, input: { data: {} } }],
+        bestPractices: ["По умолчанию используйте dev; отправляйте минимальные payload."],
         pitfalls: [
-          ...(collection.hasDrafts ? ["Provide either status or draft (not both).", "If data._status is set, it must match status."] : []),
-          "Prod gated by site+env and allowlist in restricted mode.",
+          ...(collection.hasDrafts ? ["Укажите либо status, либо draft (не оба).", "Если data._status задан, он должен совпадать со status."] : []),
+          "Prod требует site+env и allowlist в ограниченном режиме.",
         ],
       };
     }
 
     docs[updateName] = {
       name: updateName,
-      summary: `Update a ${collection.slug} document.`,
-      description: `Updates a ${collection.slug} document by id with partial data.`,
+      summary: `Обновить документ ${collection.slug}.`,
+      description: `Частично обновляет документ ${collection.slug} по id.`,
       category: "collection",
       readOnly: false,
       destructive: true,
       parameters: [
-        { name: "id", type: "string", required: true, description: "Document id." },
-        { name: "data", type: "object", required: true, description: "Partial update payload." },
+        { name: "id", type: "string", required: true, description: "ID документа." },
+        { name: "data", type: "object", required: true, description: "Данные для частичного обновления." },
         localeParam,
         ...draftParams,
         ...siteParams,
       ],
-      returns: "JSON with status, ok, and data.",
-      examples: [{ title: `Update ${collection.slug}`, input: { id: "123", data: {} } }],
-      bestPractices: ["Patch only changed fields; keep payloads small."],
-      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+      returns: "JSON со status, ok и data.",
+      examples: [{ title: `Обновить ${collection.slug}`, input: { id: "123", data: {} } }],
+      bestPractices: ["Отправляйте только изменённые поля; держите payload небольшим."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
     };
 
     docs[deleteName] = {
       name: deleteName,
-      summary: `Delete a ${collection.slug} document.`,
-      description: `Deletes a ${collection.slug} document by id.`,
+      summary: `Удалить документ ${collection.slug}.`,
+      description: `Удаляет документ ${collection.slug} по id.`,
       category: "collection",
       readOnly: false,
       destructive: true,
       parameters: [
-        { name: "id", type: "string", required: true, description: "Document id." },
+        { name: "id", type: "string", required: true, description: "ID документа." },
         localeParam,
         ...siteParams,
       ],
-      returns: "JSON with status, ok, and data.",
-      examples: [{ title: `Delete ${collection.slug}`, input: { id: "123" } }],
-      bestPractices: ["Confirm id before delete."],
-      pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
+      returns: "JSON со status, ok и data.",
+      examples: [{ title: `Удалить ${collection.slug}`, input: { id: "123" } }],
+      bestPractices: ["Проверьте id перед удалением."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
     };
 
     if (collection.hasDrafts) {
       const statusParamsForSet: ToolParam[] = [
-        { name: "status", type: "enum(draft|published)", required: true, description: "Target status." },
+        { name: "status", type: "enum(draft|published)", required: true, description: "Целевой статус." },
       ];
       const setParams: ToolParam[] = [];
       if (collection.hasSlugField) {
-        setParams.push({ name: "id", type: "string", description: "Document id." });
-        setParams.push({ name: "slug", type: "string", description: "Document slug." });
+        setParams.push({ name: "id", type: "string", description: "ID документа." });
+        setParams.push({ name: "slug", type: "string", description: "Slug документа." });
       } else {
-        setParams.push({ name: "id", type: "string", required: true, description: "Document id." });
+        setParams.push({ name: "id", type: "string", required: true, description: "ID документа." });
       }
       setParams.push(...statusParamsForSet);
       setParams.push(localeParam);
@@ -256,23 +247,23 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
 
       docs[setStatusName] = {
         name: setStatusName,
-        summary: `Set ${collection.slug} status.`,
-        description: `Sets ${collection.slug} status to draft or published.`,
+        summary: `Изменить статус ${collection.slug}.`,
+        description: `Устанавливает статус ${collection.slug} в draft или published.`,
         category: "collection",
         readOnly: false,
         destructive: true,
         parameters: setParams,
-        returns: "JSON with status, ok, and data.",
+        returns: "JSON со status, ok и data.",
         examples: [
           {
-            title: `Publish ${collection.slug}`,
+            title: `Публикация ${collection.slug}`,
             input: collection.hasSlugField ? { slug: "example", status: "published" } : { id: "123", status: "published" },
           },
         ],
-        bestPractices: ["Use draft for iterative edits; publish when ready."],
+        bestPractices: ["Используйте draft для правок; публикуйте, когда готово."],
         pitfalls: [
-          ...(collection.hasSlugField ? ["Either id or slug is required."] : []),
-          "Prod gated by site+env and allowlist in restricted mode.",
+          ...(collection.hasSlugField ? ["Нужен id или slug."] : []),
+          "Prod требует site+env и allowlist в ограниченном режиме.",
         ],
       };
     }
@@ -281,7 +272,451 @@ function buildCollectionToolDocs(): Record<string, ToolDoc> {
   return docs;
 }
 
+function buildLandingToolDocs(): Record<string, ToolDoc> {
+  const docs: Record<string, ToolDoc> = {};
+  const siteParams: ToolParam[] = [
+    { name: "headers", type: "object", description: "Дополнительные заголовки." },
+    { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Выбор сайта." },
+    { name: "env", type: "enum(dev|prod)", description: "Выбор окружения." },
+  ];
+  const localeParam: ToolParam = {
+    name: "locale",
+    type: "enum(ru|en)",
+    description: "Локаль (по умолчанию ru).",
+    default: "ru",
+  };
+
+  const landingCollections = getLandingCollections();
+  for (const collection of landingCollections) {
+    const names = getLandingToolNames(collection);
+    const slug = collection.slug;
+    const hasSlug = collection.hasSlugField;
+    const statusParams = collection.hasDrafts
+      ? [{ name: "status", type: "enum(draft|published)", description: "Фильтр статуса." }]
+      : [];
+    const draftParams = collection.hasDrafts
+      ? [{ name: "draft", type: "boolean", description: "Включать черновики (версии Payload)." }]
+      : [];
+    const idSlugParams: ToolParam[] = hasSlug
+      ? [
+          { name: "id", type: "string", description: "ID документа." },
+          { name: "slug", type: "string", description: "Slug документа." },
+        ]
+      : [{ name: "id", type: "string", required: true, description: "ID документа." }];
+
+    docs[names.list] = {
+      name: names.list,
+      summary: `Список документов ${slug} с фильтрами.`,
+      description: `Возвращает документы ${slug} с фильтрами статуса, локали, пагинации и where.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        { name: "where", type: "object", description: "Фильтр where (Payload)." },
+        { name: "limit", type: "number", description: "Максимум результатов (1–100)." },
+        { name: "page", type: "number", description: "Страница пагинации." },
+        { name: "sort", type: "string", description: "Сортировка (например, -updatedAt)." },
+        ...statusParams,
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Список ${slug}`,
+          input: collection.hasDrafts ? { status: "published", limit: 5 } : { limit: 5 },
+        },
+      ],
+      bestPractices: ["Используйте небольшие лимиты."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.get] = {
+      name: names.get,
+      summary: `Получить документ ${slug}.`,
+      description: `Получает документ ${slug} по id${hasSlug ? " или slug" : ""}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [...idSlugParams, ...statusParams, localeParam, ...draftParams, ...siteParams],
+      returns: "JSON документа.",
+      examples: [
+        { title: `Получить ${slug}`, input: hasSlug ? { slug: "main" } : { id: "123" } },
+      ],
+      bestPractices: ["Для стабильных запросов предпочтителен id."],
+      pitfalls: [
+        ...(hasSlug ? ["Нужен id или slug."] : []),
+        "Prod требует site+env и allowlist в ограниченном режиме.",
+      ],
+    };
+
+    docs[names.heroGet] = {
+      name: names.heroGet,
+      summary: "Получить hero‑поля и опциональный hero‑блок.",
+      description: `Извлекает hero‑поля и опциональный hero‑блок из ${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        ...idSlugParams,
+        localeParam,
+        ...draftParams,
+        { name: "blockType", type: "string", description: "Явный blockType для hero (необязательно)." },
+        ...siteParams,
+      ],
+      returns: "JSON с hero‑полями и блоком (если найден).",
+      examples: [{ title: `Hero ${slug}`, input: hasSlug ? { slug: "main" } : { id: "123" } }],
+      bestPractices: ["Используйте blockType, чтобы выбрать конкретный hero‑блок."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blocksList] = {
+      name: names.blocksList,
+      summary: "Список блоков layout с индексами и краткими данными.",
+      description: `Список блоков layout из ${slug} с индексами и кратким описанием.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [...idSlugParams, ...statusParams, localeParam, ...draftParams, ...siteParams],
+      returns: "JSON со списком блоков и метаданными.",
+      examples: [
+        { title: `Блоки ${slug}`, input: hasSlug ? { slug: "main" } : { id: "123" } },
+      ],
+      bestPractices: ["Используйте index для детерминированных правок."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blockGet] = {
+      name: names.blockGet,
+      summary: "Получить блок layout по index или blockId.",
+      description: `Возвращает один блок layout из ${slug} по index или blockId.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        ...idSlugParams,
+        { name: "index", type: "number", description: "Индекс блока." },
+        { name: "blockId", type: "string", description: "ID блока (id/_id)." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON с блоком и его индексом.",
+      examples: [
+        {
+          title: `Блок ${slug}`,
+          input: hasSlug ? { slug: "main", index: 0 } : { id: "123", index: 0 },
+        },
+      ],
+      bestPractices: ["Укажите blockId или index."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    if (names.create) {
+      const createStatusParams = collection.hasDrafts
+        ? [{ name: "status", type: "enum(draft|published)", description: "Подсказка статуса (ставит _status)." }]
+        : [];
+      docs[names.create] = {
+        name: names.create,
+        summary: `Создать документ ${slug}.`,
+        description: `Создаёт документ ${slug}. Блоки layout передавайте в поле layout.`,
+        category: "landing",
+        readOnly: false,
+        destructive: true,
+        parameters: [
+          { name: "data", type: "object", required: true, description: "Данные документа." },
+          ...createStatusParams,
+          localeParam,
+          ...draftParams,
+          ...siteParams,
+        ],
+        returns: "JSON со status, ok и data.",
+        examples: [
+          {
+            title: `Создать ${slug}`,
+            input: hasSlug ? { data: { slug: "demo" } } : { data: {} },
+          },
+        ],
+        bestPractices: ["Держите payload минимальным."],
+        pitfalls: [
+          ...(collection.hasDrafts ? ["Укажите либо status, либо draft (не оба)."] : []),
+          "Prod требует site+env и allowlist в ограниченном режиме.",
+        ],
+      };
+    }
+
+    docs[names.update] = {
+      name: names.update,
+      summary: `Обновить документ ${slug}.`,
+      description: `Безопасно обновляет поля верхнего уровня ${slug}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        ...idSlugParams,
+        { name: "data", type: "object", required: true, description: "Данные для частичного обновления." },
+        { name: "mode", type: "enum(safe|merge)", description: "Режим обновления (по умолчанию safe)." },
+        { name: "allowUnsafe", type: "boolean", description: "Разрешить небезопасный merge/replace." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Обновить ${slug}`,
+          input: hasSlug ? { slug: "main", data: { title: "New" } } : { id: "123", data: { title: "New" } },
+        },
+      ],
+      bestPractices: ["Обновляйте только изменённые поля."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.delete] = {
+      name: names.delete,
+      summary: `Удалить документ ${slug}.`,
+      description: `Удаляет документ ${slug} по id${hasSlug ? " или slug" : ""}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [...idSlugParams, ...siteParams],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Удалить ${slug}`,
+          input: hasSlug ? { slug: "main" } : { id: "123" },
+        },
+      ],
+      bestPractices: ["Проверьте ID перед удалением."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blockAdd] = {
+      name: names.blockAdd,
+      summary: "Добавить блок в layout.",
+      description: `Добавляет блок в layout для ${slug}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        ...idSlugParams,
+        { name: "block", type: "object", required: true, description: "Данные блока (blockType обязателен)." },
+        { name: "position", type: "number", description: "Позиция вставки (необязательно)." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Добавить блок ${slug}`,
+          input: hasSlug
+            ? { slug: "main", block: { blockType: "content" } }
+            : { id: "123", block: { blockType: "content" } },
+        },
+      ],
+      bestPractices: ["Используйте position для контроля порядка."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blockUpdate] = {
+      name: names.blockUpdate,
+      summary: "Обновить блок layout по index или blockId.",
+      description: `Безопасно обновляет блок в layout ${slug}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        ...idSlugParams,
+        { name: "index", type: "number", description: "Индекс блока." },
+        { name: "blockId", type: "string", description: "ID блока (id/_id)." },
+        { name: "patch", type: "object", required: true, description: "Патч блока." },
+        { name: "mode", type: "enum(safe|merge|replace)", description: "Режим обновления." },
+        { name: "allowUnsafe", type: "boolean", description: "Разрешить небезопасный merge/replace." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Обновить блок ${slug}`,
+          input: hasSlug
+            ? { slug: "main", index: 0, patch: { blockName: "Updated" } }
+            : { id: "123", index: 0, patch: { blockName: "Updated" } },
+        },
+      ],
+      bestPractices: ["Используйте safe для защиты массивов при merge."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blockRemove] = {
+      name: names.blockRemove,
+      summary: "Удалить блок layout по index или blockId.",
+      description: `Удаляет блок из layout ${slug}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        ...idSlugParams,
+        { name: "index", type: "number", description: "Индекс блока." },
+        { name: "blockId", type: "string", description: "ID блока (id/_id)." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Удалить блок ${slug}`,
+          input: hasSlug ? { slug: "main", index: 0 } : { id: "123", index: 0 },
+        },
+      ],
+      bestPractices: ["Используйте blockId, когда порядок может меняться."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    docs[names.blockMove] = {
+      name: names.blockMove,
+      summary: "Переместить блок в layout.",
+      description: `Перемещает блок в layout ${slug}.`,
+      category: "landing",
+      readOnly: false,
+      destructive: true,
+      parameters: [
+        ...idSlugParams,
+        { name: "from", type: "number", required: true, description: "Индекс источника." },
+        { name: "to", type: "number", required: true, description: "Индекс назначения." },
+        localeParam,
+        ...draftParams,
+        ...siteParams,
+      ],
+      returns: "JSON со status, ok и data.",
+      examples: [
+        {
+          title: `Переместить блок ${slug}`,
+          input: hasSlug ? { slug: "main", from: 0, to: 1 } : { id: "123", from: 0, to: 1 },
+        },
+      ],
+      bestPractices: ["Проверьте индексы перед перемещением."],
+      pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+    };
+
+    if (names.setStatus) {
+      docs[names.setStatus] = {
+        name: names.setStatus,
+        summary: `Установить статус ${slug} (draft/published).`,
+        description: `Устанавливает _status для документов ${slug}.`,
+        category: "landing",
+        readOnly: false,
+        destructive: true,
+        parameters: [
+          ...idSlugParams,
+          { name: "status", type: "enum(draft|published)", required: true, description: "Целевой статус." },
+          localeParam,
+          ...siteParams,
+        ],
+        returns: "JSON со status, ok и data.",
+        examples: [
+          {
+            title: `Публикация ${slug}`,
+            input: hasSlug ? { slug: "main", status: "published" } : { id: "123", status: "published" },
+          },
+        ],
+        bestPractices: ["Используйте для явной публикации."],
+        pitfalls: ["Prod требует site+env и allowlist в ограниченном режиме."],
+      };
+    }
+
+    docs[names.generate] = {
+      name: names.generate,
+      summary: "Сгенерировать JSON блока layout по схеме.",
+      description: `Генерирует JSON для blockType по схемам schema/${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        { name: "blockType", type: "string", required: true, description: "Slug типа блока." },
+        { name: "preset", type: "enum(minimal|full)", description: "Пресет размера примера." },
+        { name: "locale", type: "enum(en|ru)", description: "Локаль (необязательно)." },
+      ],
+      returns: "JSON блока.",
+      examples: [{ title: `Сгенерировать блок ${slug}`, input: { blockType: "content" } }],
+      bestPractices: ["Используйте minimal для быстрых заготовок."],
+      pitfalls: ["Наличие схем зависит от каталога schema."],
+    };
+
+    docs[names.validate] = {
+      name: names.validate,
+      summary: "Проверить JSON layout по схемам.",
+      description: `Проверяет JSON документа или блока по схемам schema/${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        { name: "document", type: "string", required: true, description: "JSON строка." },
+        { name: "mode", type: "enum(strict|loose)", description: "Loose трактует не‑JSON как MDX." },
+      ],
+      returns: "JSON результата валидации.",
+      examples: [
+        { title: `Проверить ${slug}`, input: { document: "{\"layout\":[{\"blockType\":\"content\"}]}" } },
+      ],
+      bestPractices: ["blockType должен соответствовать схеме."],
+      pitfalls: ["Неизвестный blockType приводит к ошибке."],
+    };
+
+    docs[names.schemaList] = {
+      name: names.schemaList,
+      summary: "Список доступных схем блоков.",
+      description: `Возвращает список схем блоков в schema/${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [],
+      returns: "JSON со списком схем блоков.",
+      examples: [{ title: `Схемы ${slug}`, input: {} }],
+      bestPractices: ["Убедитесь, что каталог схем существует."],
+      pitfalls: ["Пустой список означает, что схемы не найдены."],
+    };
+
+    docs[names.schemaGet] = {
+      name: names.schemaGet,
+      summary: "Получить JSON Schema блока.",
+      description: `Возвращает JSON Schema для blockType в schema/${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [{ name: "blockType", type: "string", required: true, description: "Slug типа блока." }],
+      returns: "Raw JSON Schema.",
+      examples: [{ title: `Получить схему ${slug}`, input: { blockType: "content" } }],
+      bestPractices: ["Используйте schema_list, чтобы узнать доступные blockType."],
+      pitfalls: ["Если схема отсутствует, вернётся ошибка not found."],
+    };
+
+    docs[names.documentation] = {
+      name: names.documentation,
+      summary: "Справка по landing‑инструментам.",
+      description: `Возвращает сводку или детали по инструментам ${slug}.`,
+      category: "landing",
+      readOnly: true,
+      destructive: false,
+      parameters: [
+        { name: "mode", type: "enum(summary|tool)", description: "Сводка или один инструмент." },
+        { name: "toolName", type: "string", description: "Имя инструмента для деталей." },
+      ],
+      returns: "JSON со списком или деталями.",
+      examples: [{ title: `Сводка инструментов ${slug}`, input: { mode: "summary" } }],
+      bestPractices: ["Для общего индекса используйте payload_tools_documentation."],
+      pitfalls: ["Ограничено только landing‑инструментами."],
+    };
+  }
+
+  return docs;
+}
+
 const COLLECTION_TOOL_DOCS = buildCollectionToolDocs();
+const LANDING_TOOL_DOCS = buildLandingToolDocs();
 
 const TOOL_DOCS: Record<string, ToolDoc> = {
   payload_echo: {
@@ -605,388 +1040,6 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
     bestPractices: ["Use for quick lookup of endpoints and patterns."],
     pitfalls: ["May not include project-specific endpoints."],
   },
-  payload_landing_list: {
-    name: "payload_landing_list",
-    summary: "List landing documents with optional filters.",
-    description:
-      "Lists landing documents from the landing collection with optional filters for status, locale, pagination, and where clauses. If status=draft, draft=true is enforced automatically (including when where uses _status=draft).",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "where", type: "object", description: "Payload where filter object." },
-      { name: "limit", type: "number", description: "Max results (1-100)." },
-      { name: "page", type: "number", description: "Pagination page." },
-      { name: "sort", type: "string", description: "Sort string (e.g. -updatedAt)." },
-      { name: "status", type: "enum(draft|published)", description: "Status filter." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      {
-        name: "draft",
-        type: "boolean",
-        description: "Include drafts (Payload versions). Forced to true when status=draft or where filters _status=draft.",
-      },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [
-      { title: "List published landings", input: { status: "published", limit: 5 } },
-      { title: "List draft landings (auto draft=true)", input: { status: "draft", limit: 5 } },
-    ],
-    bestPractices: ["Use small limits.", "Use status filter for published-only lists."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_get: {
-    name: "payload_landing_get",
-    summary: "Get a landing by id or slug.",
-    description:
-      "Fetches a landing document by id or slug (landing collection). If status=draft, draft=true is enforced automatically.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "status", type: "enum(draft|published)", description: "Status hint. draft enforces draft=true." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Include drafts (Payload versions). Forced to true when status=draft." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "Landing document JSON.",
-    examples: [{ title: "Get landing by slug", input: { slug: "main" } }],
-    bestPractices: ["Use slug for editor-friendly fetches."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_hero_get: {
-    name: "payload_landing_hero_get",
-    summary: "Get hero fields and optional hero block.",
-    description:
-      "Returns top-level hero fields (heroH1, heroTitle, etc.) and optionally the first hero-like block.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Include drafts (Payload versions)." },
-      { name: "blockType", type: "string", description: "Optional hero blockType to match." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with hero fields and optional hero block.",
-    examples: [{ title: "Get hero by slug", input: { slug: "main" } }],
-    bestPractices: ["Use with block list to pinpoint hero blocks."],
-    pitfalls: ["Hero block detection is heuristic unless blockType is provided."],
-  },
-  payload_landing_blocks_list: {
-    name: "payload_landing_blocks_list",
-    summary: "List landing blocks with indexes and summaries.",
-    description:
-      "Returns an indexed list of blocks for fast targeting by editors. If status=draft, draft=true is enforced automatically.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "status", type: "enum(draft|published)", description: "Status hint. draft enforces draft=true." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Include drafts (Payload versions). Forced to true when status=draft." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON list of blocks with index, blockType, and summary.",
-    examples: [{ title: "List blocks", input: { slug: "main" } }],
-    bestPractices: ["Use before block updates to pick the correct index."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_block_get: {
-    name: "payload_landing_block_get",
-    summary: "Get a landing block by index or blockId.",
-    description: "Fetches a single block from sections for precise edits.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "index", type: "number", description: "Block index in sections." },
-      { name: "blockId", type: "string", description: "Block id (if present)." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Include drafts (Payload versions)." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON block payload with index.",
-    examples: [{ title: "Get block by index", input: { slug: "main", index: 0 } }],
-    bestPractices: ["Use blockId when available for stability."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_create: {
-    name: "payload_landing_create",
-    summary: "Create a landing document.",
-    description: "Creates a new landing document in the landing collection.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "data", type: "object", required: true, description: "Landing document payload." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Create as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Create landing", input: { data: { slug: "demo", title: "Demo" } } }],
-    bestPractices: ["Create in dev by default; validate sections before publish."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_update: {
-    name: "payload_landing_update",
-    summary: "Safely update landing top-level fields.",
-    description:
-      "Default safe mode merges arrays by id/_id to prevent accidental data loss; legacy shallow update requires allowUnsafe=true.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "data", type: "object", required: true, description: "Partial update payload." },
-      { name: "mode", type: "enum(safe|merge)", description: "Update mode (default safe)." },
-      { name: "allowUnsafe", type: "boolean", description: "Required for merge mode." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Update hero title", input: { slug: "main", data: { heroH1: "New title" } } }],
-    bestPractices: [
-      "Use default safe mode for precise edits.",
-      "Include id/_id for array items to update them without replacing the full array.",
-      "Use merge only with allowUnsafe=true when you intend to overwrite arrays.",
-    ],
-    pitfalls: [
-      "Safe mode rejects arrays without id/_id; use allowUnsafe when you need full replacement.",
-      "Prod gated by site+env and allowlist in restricted mode.",
-    ],
-  },
-  payload_landing_block_add: {
-    name: "payload_landing_block_add",
-    summary: "Add a block to landing sections.",
-    description: "Appends or inserts a block into sections.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "block", type: "object", required: true, description: "Block payload (must include blockType)." },
-      { name: "position", type: "number", description: "Insert position (default end)." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Add CTA block", input: { slug: "main", block: { blockType: "callToAction", heading: "Let's go" } } }],
-    bestPractices: ["Validate block schema before insert."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_block_update: {
-    name: "payload_landing_block_update",
-    summary: "Safely update a landing block by index or blockId.",
-    description:
-      "Default safe mode performs deep merge and merges array items by id/_id; legacy shallow merge/replace requires allowUnsafe=true.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "index", type: "number", description: "Block index in sections." },
-      { name: "blockId", type: "string", description: "Block id (if present)." },
-      { name: "patch", type: "object", required: true, description: "Fields to merge or full block for replace." },
-      { name: "mode", type: "enum(safe|merge|replace)", description: "Update mode (default safe)." },
-      { name: "allowUnsafe", type: "boolean", description: "Required for merge/replace modes." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Update hero heading", input: { slug: "main", index: 0, patch: { heading: "New" } } }],
-    bestPractices: [
-      "Use default safe mode for precise edits.",
-      "Include id/_id for array items to update them without replacing the full array.",
-      "Use merge/replace only with allowUnsafe=true and only when you intend full overwrite.",
-    ],
-    pitfalls: [
-      "Safe mode rejects arrays without id/_id; use allowUnsafe when you need full replacement.",
-      "Prod gated by site+env and allowlist in restricted mode.",
-    ],
-  },
-  payload_landing_block_remove: {
-    name: "payload_landing_block_remove",
-    summary: "Remove a landing block by index or blockId.",
-    description: "Deletes a block from sections by index or id.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "index", type: "number", description: "Block index in sections." },
-      { name: "blockId", type: "string", description: "Block id (if present)." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Remove block by index", input: { slug: "main", index: 3 } }],
-    bestPractices: ["Confirm block index with blocks_list first."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_block_move: {
-    name: "payload_landing_block_move",
-    summary: "Move a landing block within sections.",
-    description: "Reorders blocks by moving from index to index.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "from", type: "number", required: true, description: "From index." },
-      { name: "to", type: "number", required: true, description: "To index." },
-      { name: "sectionsField", type: "string", description: "Sections field name (default sections)." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "draft", type: "boolean", description: "Write as draft (Payload versions)." },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Move block", input: { slug: "main", from: 5, to: 1 } }],
-    bestPractices: ["Use blocks_list to confirm indexes before move."],
-    pitfalls: ["Prod gated by site+env and allowlist in restricted mode."],
-  },
-  payload_landing_set_status: {
-    name: "payload_landing_set_status",
-    summary: "Set landing status (draft/published).",
-    description: "Toggles draft/published status via Payload draft workflow.",
-    category: "landing",
-    readOnly: false,
-    destructive: true,
-    parameters: [
-      { name: "id", type: "string", description: "Landing id." },
-      { name: "slug", type: "string", description: "Landing slug." },
-      { name: "status", type: "enum(draft|published)", required: true, description: "Target status." },
-      { name: "locale", type: "enum(ru|en)", description: "Locale (default ru).", default: "ru" },
-      { name: "headers", type: "object", description: "Extra headers." },
-      { name: "site", type: "enum(dev.synestra.io|synestra.io)", description: "Site selector." },
-      { name: "env", type: "enum(dev|prod)", description: "Environment selector." },
-    ],
-    returns: "JSON with status, ok, and data.",
-    examples: [{ title: "Publish landing", input: { slug: "main", status: "published" } }],
-    bestPractices: ["Use after validating sections."],
-    pitfalls: ["Requires Payload draft/publish workflow; may fail if disabled."],
-  },
-  payload_landing_generate: {
-    name: "payload_landing_generate",
-    summary: "Generate landing block JSON for GitOps schema.",
-    description: "Generates a JSON payload for a landing block that matches schemas.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "blockType", type: "string", required: true, description: "Block type (slug)." },
-      { name: "preset", type: "enum(minimal|full)", description: "Sample size." },
-      { name: "locale", type: "enum(en|ru)", description: "Sample locale." },
-    ],
-    returns: "JSON block payload.",
-    examples: [{ title: "Generate content block", input: { blockType: "content", preset: "full" } }],
-    bestPractices: ["Use preset=minimal for skeletons, full for samples."],
-    pitfalls: ["Only supports known block types."],
-  },
-  payload_landing_validate: {
-    name: "payload_landing_validate",
-    summary: "Validate landing JSON against schemas.",
-    description: "Validates a landing document or block JSON against schemas.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "document", type: "string", required: true, description: "JSON string for a block or document." },
-      { name: "mode", type: "enum(strict|loose)", description: "Loose mode skips non-JSON." },
-    ],
-    returns: "JSON validation result.",
-    examples: [{ title: "Validate document", input: { document: "{\"sections\":[{\"blockType\":\"content\"}]}" } }],
-    bestPractices: ["Validate after editing content blocks."],
-    pitfalls: ["Strict mode rejects non-JSON input."],
-  },
-  payload_landing_schema_list: {
-    name: "payload_landing_schema_list",
-    summary: "List available landing schemas.",
-    description: "Returns the list of available landing block schemas.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [],
-    returns: "JSON list of block types.",
-    examples: [{ title: "List schemas", input: {} }],
-    bestPractices: ["Use to discover supported blocks."],
-    pitfalls: ["List depends on bundled schemas."],
-  },
-  payload_landing_schema_get: {
-    name: "payload_landing_schema_get",
-    summary: "Get JSON schema for a landing block.",
-    description: "Returns the JSON schema for a specific landing block type.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [{ name: "blockType", type: "string", required: true, description: "Block type (slug)." }],
-    returns: "JSON schema text.",
-    examples: [{ title: "Get content schema", input: { blockType: "content" } }],
-    bestPractices: ["Use for validation or tooling generation."],
-    pitfalls: ["Unknown blockType returns error message."],
-  },
-  payload_landing_documentation: {
-    name: "payload_landing_documentation",
-    summary: "Help for landing tools.",
-    description: "Returns summary or per-tool details for landing tools.",
-    category: "landing",
-    readOnly: true,
-    destructive: false,
-    parameters: [
-      { name: "mode", type: "enum(summary|tool)", description: "Summary or specific tool help." },
-      { name: "toolName", type: "string", description: "Tool name for detailed help." },
-    ],
-    returns: "JSON documentation.",
-    examples: [{ title: "Get landing docs summary", input: { mode: "summary" } }],
-    bestPractices: ["Prefer payload_tools_documentation for full server docs."],
-    pitfalls: ["Limited to landing tools only."],
-  },
   payload_tools_documentation: {
     name: "payload_tools_documentation",
     summary: "Full documentation for payloadcmsmcp tools.",
@@ -1010,7 +1063,7 @@ const TOOL_DOCS: Record<string, ToolDoc> = {
   },
 };
 
-Object.assign(TOOL_DOCS, COLLECTION_TOOL_DOCS);
+Object.assign(TOOL_DOCS, LANDING_TOOL_DOCS, COLLECTION_TOOL_DOCS);
 
 const TOOL_ORDER = Object.keys(TOOL_DOCS);
 

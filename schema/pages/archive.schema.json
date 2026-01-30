@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "archive",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blockType": { "const": "archive" },
+    "blockName": { "type": "string" },
+    "relationTo": { "type": "string", "default": "posts" },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 6 },
+    "sort": { "type": "string", "default": "-publishedAt" },
+    "filter": { "type": "object" }
+  },
+  "required": ["blockType"]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "formBlock",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blockType": { "const": "formBlock" },
+    "blockName": { "type": "string" },
+    "heading": { "type": "string" },
+    "description": { "type": "string" },
+    "formId": { "type": "string" },
+    "submitLabel": { "type": "string" }
+  },
+  "required": ["blockType", "formId"]
+}
